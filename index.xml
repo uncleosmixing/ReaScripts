@@ -52,6 +52,21 @@ Splits grouped phrase audio and subtitle items while preserving word timing meta
       </version>
     </reapack>
 
+    <reapack name="ReaTitles - Calibrate Timing.lua" type="script" desc="Calibrate word timing from corrected markers">
+      <metadata>
+        <description><![CDATA[
+# ReaTitles Calibrate Timing
+
+After transcribing an audio item and manually correcting the take marker positions to match the actual word onsets, run this script on the same item.
+
+It computes the median delta between your corrected markers and the original Whisper timestamps, and saves it as a project-level calibration value. All future transcriptions on this project will apply the offset automatically.
+        ]]></description>
+      </metadata>
+      <version name="1.7.1" author="ReaTitles contributors">
+        <source main="main">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_calibrate_timing.lua</source>
+      </version>
+    </reapack>
+
     <reapack name="ReaTitles - SubOverlay.lua" type="script" desc="Subtitle overlay window">
       <metadata>
         <description><![CDATA[

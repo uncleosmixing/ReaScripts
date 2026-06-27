@@ -152,7 +152,92 @@ end
 
 function M.snap_word_to_onset(take, w_start, prev_end_time)
   -- stable-ts provides highly accurate word timestamps, no snapping needed
+  -- Calibration offset is applied in set_audio_words
   return w_start
+end
+
+-- ── Calibration offset ──────────────────────────────────────────────────────
+-- The calibration offset compensates for any systematic delay between the
+-- Whisper-predicted word start and the actual audible onset.
+-- It is measured by comparing user-corrected take markers vs stored word data.
+
+local CALIB_EXT_SECTION = "ReaTitles"
+local CALIB_EXT_KEY     = "calibration_offset_sec"
+
+function M.get_calibration_offset()
+  local ok, val = reaper.GetProjExtState(0, CALIB_EXT_SECTION, CALIB_EXT_KEY)
+  if ok > 0 and val ~= "" then
+    return tonumber(val) or 0.0
+  end
+  return 0.0
+end
+
+function M.set_calibration_offset(offset)
+  reaper.SetProjExtState(0, CALIB_EXT_SECTION, CALIB_EXT_KEY,
+    string.format("%.6f", offset))
+end
+
+--- Measure calibration offset from a user-corrected audio item.
+--- Call this after the user manually moves take markers to the correct positions.
+--- Returns the computed offset in seconds (positive = Whisper was early).
+function M.calibrate_from_markers(item)
+  local take = reaper.GetActiveTake(item)
+  if not take then return nil, "No active take" end
+  
+  local stored_words = M.get_audio_words(take)
+  if #stored_words == 0 then
+    return nil, "No stored word data on this item (run transcription first)"
+  end
+  
+  local item_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+  local num_markers = reaper.GetNumTakeMarkers(take)
+  if num_markers == 0 then
+    return nil, "No take markers on this item"
+  end
+  
+  -- Collect marker positions keyed by index
+  local marker_positions = {}
+  for mi = 0, num_markers - 1 do
+    local retval, name, pos = reaper.GetTakeMarker(take, mi)
+    if retval >= 0 then
+      -- pos is relative to take start in take time (source seconds)
+      marker_positions[mi + 1] = pos
+    end
+  end
+  
+  -- Compute per-word delta: marker_pos − whisper_word_start
+  local deltas = {}
+  for wi, word in ipairs(stored_words) do
+    local marker_pos = marker_positions[wi]
+    if marker_pos then
+      local whisper_pos = word[1]  -- stored relative to take
+      local delta = marker_pos - whisper_pos
+      table.insert(deltas, delta)
+      reaper.ShowConsoleMsg(string.format(
+        "[Calibrate] Word %d '%s': whisper=%.3f marker=%.3f delta=%.3f\n",
+        wi, word[3] or "?", whisper_pos, marker_pos, delta))
+    end
+  end
+  
+  if #deltas == 0 then
+    return nil, "Could not match any markers to stored words"
+  end
+  
+  -- Use median to avoid outliers
+  table.sort(deltas)
+  local median_delta
+  local n = #deltas
+  if n % 2 == 1 then
+    median_delta = deltas[math.ceil(n / 2)]
+  else
+    median_delta = (deltas[n / 2] + deltas[n / 2 + 1]) / 2.0
+  end
+  
+  M.set_calibration_offset(median_delta)
+  reaper.ShowConsoleMsg(string.format(
+    "[Calibrate] Measured %d word deltas. Median offset = %.3f sec saved.\n",
+    #deltas, median_delta))
+  return median_delta, nil
 end
 
 function M.set_audio_words(take, words)
@@ -162,22 +247,29 @@ function M.set_audio_words(take, words)
     reaper.DeleteTakeMarker(take, i)
   end
   
+  local calibration = M.get_calibration_offset()
+  
   local snapped_words = {}
   local prev_end = 0
   for _, word in ipairs(words) do
-    local start_time = word[1]
+    local start_time = word[1] + calibration
     local snapped = M.snap_word_to_onset(take, start_time, prev_end)
     reaper.SetTakeMarker(take, -1, word[3], snapped, 0)
     
-    local w_end = word[2]
+    local w_end = word[2] + calibration
     if w_end < snapped then w_end = snapped + 0.1 end
     table.insert(snapped_words, { snapped, w_end, word[3] })
     
     prev_end = snapped
   end
   
-  -- Store snapped in take extension state
-  M.set_take_string(take, M.AUDIO_WORDS_KEY, M.serialize_words(snapped_words))
+  -- Store snapped in take extension state (without calibration, so raw)
+  -- Store raw word times (without calibration offset) for future re-calibration
+  local raw_words = {}
+  for _, word in ipairs(words) do
+    table.insert(raw_words, { word[1], word[2], word[3] })
+  end
+  M.set_take_string(take, M.AUDIO_WORDS_KEY, M.serialize_words(raw_words))
 end
 
 function M.get_audio_words(take)
