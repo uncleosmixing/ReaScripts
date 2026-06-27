@@ -1,5 +1,5 @@
 -- @description Transcribe audio items to subtitle text items (Whisper)
--- @version 1.2.0
+-- @version 1.2.1
 -- @author ReaTitles
 -- @changelog + Initial release
 -- @about
@@ -32,6 +32,46 @@ local function find_python()
     end
   end
   return nil
+end
+
+local function ensure_faster_whisper(python)
+  local check = os.execute(python .. ' -c "import faster_whisper"')
+  if check == true or check == 0 then return true end
+
+  msg("[ReaTitles SETUP] Installing missing Python package faster-whisper...")
+  msg("[ReaTitles SETUP] Internet access is required for this one-time setup.")
+  local command = python ..
+    ' -m pip install --user --disable-pip-version-check faster-whisper'
+  local exit_code, output = r.ExecProcess(command, 600000)
+  if output and output ~= "" then msg("[ReaTitles pip]\n" .. output) end
+
+  if tonumber(exit_code) ~= 0 then
+    msg("[ReaTitles SETUP] pip is unavailable; initializing pip...")
+    local pip_code, pip_output =
+      r.ExecProcess(python .. ' -m ensurepip --upgrade', 300000)
+    if pip_output and pip_output ~= "" then
+      msg("[ReaTitles ensurepip]\n" .. pip_output)
+    end
+    if tonumber(pip_code) == 0 then
+      exit_code, output = r.ExecProcess(command, 600000)
+      if output and output ~= "" then
+        msg("[ReaTitles pip retry]\n" .. output)
+      end
+    end
+  end
+
+  check = os.execute(python .. ' -c "import faster_whisper"')
+  if check == true or check == 0 then
+    msg("[ReaTitles SETUP] faster-whisper installed successfully.")
+    return true
+  end
+
+  msg("[ReaTitles ERROR] Automatic faster-whisper installation failed.")
+  r.ShowMessageBox(
+    "Could not install faster-whisper automatically.\n\n" ..
+    "Check the REAPER console and verify internet access.",
+    "ReaTitles dependency error", 0)
+  return false
 end
 
 -- JSON encoder
@@ -181,17 +221,7 @@ local function main()
 
   local script_dir = get_script_dir()
 
-  -- Check faster-whisper
-  local whisper_check = os.execute(python .. ' -c "import faster_whisper"')
-  if whisper_check ~= true and whisper_check ~= 0 then
-    msg("[ReaTitles ERROR] Python package 'faster-whisper' is missing.")
-    r.ShowMessageBox(
-      "faster-whisper is not installed.\n\n" ..
-      "ReaTitles works in strict offline mode and will not download or install it.\n" ..
-      "Install the dependency and Whisper model manually before running transcription.",
-      "ReaTitles — Offline mode", 0)
-    return
-  end
+  if not ensure_faster_whisper(python) then return end
 
   -- Collect items
   local items_json = {}

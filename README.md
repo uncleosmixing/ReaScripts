@@ -40,11 +40,11 @@ ReaTitles is a subtitle, dialogue-editing and offline transcription toolkit for 
 ### Only for offline transcription
 
 - Python 3.8 or newer
-- `faster-whisper`
+- `faster-whisper` (installed automatically with `pip` when missing)
 - FFmpeg available in `PATH` or installed through WinGet
 - A locally cached faster-whisper model (`small` by default)
 
-ReaTitles never downloads a model automatically and transcription runs offline.
+The first automatic Python-package installation requires internet access. ReaTitles never downloads a Whisper model automatically; after setup, transcription runs offline with the locally cached model.
 
 ### Word review
 
