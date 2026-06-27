@@ -1,6 +1,6 @@
 -- @description Prompter
 -- @author Chirick, ReaTitles contributors
--- @version 1.4.8
+-- @version 1.4.9
 -- @changelog
 --   + Magnetic phrase editing, offline transcription and Word review round-trip
 -- @link https://github.com/uncleosmixing/ReaTitles
@@ -2316,14 +2316,14 @@ local function draw_list()
                 element_scale = font_settings.region.scale
                 element_color = color_settings.region.normal
                 element_highlight = color_settings.region.highlight
-            elseif r.type == "text_item" then
+            elseif r.type == "text_item" or r.type == "audio_item" then
                 element_font = font_settings.item.font
                 element_scale = font_settings.item.scale
                 element_color = color_settings.item.normal
                 element_highlight = color_settings.item.highlight
             end
         end
-        if r.type == "text_item" then
+        if r.type == "text_item" or r.type == "audio_item" then
             element_color = item_color_to_rgba(r.custom_color) or element_color
             if r.review and r.review ~= "" then
                 element_color = 0xFF9F43FF
@@ -2422,14 +2422,8 @@ local function draw_list()
             reaper.ImGui_PopItemWidth(ctx)
         else
             -- Normal display
-            if search and search ~= "" then
-                local text_col_w = ui_dimensions.win_width - 10 - ui_dimensions.time_width - ui_dimensions.space_width
-                draw_search_highlight(line, search, text_col_w)
-            else
-                reaper.ImGui_Text(ctx, line)
-            end
-
-            if r.type == "audio_item" and (is_current or (editing_idx == nil and selected_idx == i)) then
+            local rendered_inline = false
+            if r.type == "audio_item" and not (search and search ~= "") then
                 local take = reaper.GetActiveTake(r.item_ptr)
                 if take then
                     local words = subtitle_model.get_audio_words(take)
@@ -2448,34 +2442,66 @@ local function draw_list()
                             end
                         end
                         if #active_words > 0 then
-                            reaper.ImGui_SetCursorPosX(ctx, ui_dimensions.time_width + ui_dimensions.space_width)
+                            rendered_inline = true
+                            local text_col_w = ui_dimensions.win_width - 15 - ui_dimensions.time_width - ui_dimensions.space_width
+                            local start_x = ui_dimensions.time_width + ui_dimensions.space_width
+                            
                             reaper.ImGui_PushStyleVar(ctx, reaper.ImGui_StyleVar_ItemSpacing(), 4, 3)
-                            reaper.ImGui_TextColored(ctx, 0x888888FF, "↳")
-                            reaper.ImGui_SameLine(ctx)
+                            reaper.ImGui_PushStyleVar(ctx, reaper.ImGui_StyleVar_FramePadding(), 0, 0)
+                            reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_Button(), 0)
+                            reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_ButtonHovered(), 0xFFFFFF1A)
+                            reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_ButtonActive(), 0xFFFFFF33)
+                            
                             for wi, w in ipairs(active_words) do
-                                reaper.ImGui_PushID(ctx, "word_" .. i .. "_" .. wi)
+                                reaper.ImGui_PushID(ctx, "word_inline_" .. i .. "_" .. wi)
                                 local wl_pos = item_pos + (w[1] - start_offs) / playrate
                                 local cur_pos = reaper.GetCursorPosition()
                                 local is_cur_word = math.abs(cur_pos - wl_pos) < 0.15
+                                
                                 if is_cur_word then
-                                    reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_Button(), 0x8A4F2FFF)
-                                    reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_ButtonHovered(), 0xAA6F3FFF)
+                                    reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_Text(), 0xFF8C00FF)
                                 else
-                                    reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_Button(), 0x1A2A3AFF)
-                                    reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_ButtonHovered(), 0x2A3A4AFF)
+                                    local col = is_current and theme.accent or element_color
+                                    reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_Text(), col)
                                 end
-                                if reaper.ImGui_Button(ctx, w[3]) then
+                                
+                                local word_text = w[3]
+                                local cur_x = reaper.ImGui_GetCursorPosX(ctx)
+                                if cur_x < start_x then
+                                    reaper.ImGui_SetCursorPosX(ctx, start_x)
+                                end
+                                
+                                if reaper.ImGui_Button(ctx, word_text) then
                                     reaper.SetEditCurPos(wl_pos, true, false)
                                 end
-                                reaper.ImGui_PopStyleColor(ctx, 2)
+                                reaper.ImGui_PopStyleColor(ctx, 1)
                                 reaper.ImGui_PopID(ctx)
+                                
                                 if wi < #active_words then
-                                    reaper.ImGui_SameLine(ctx)
+                                    local next_word_text = active_words[wi + 1][3]
+                                    local next_word_w = reaper.ImGui_CalcTextSize(ctx, next_word_text)
+                                    local _, _ = reaper.ImGui_GetItemRectMin(ctx)
+                                    local last_x2, _ = reaper.ImGui_GetItemRectMax(ctx)
+                                    local next_x = last_x2 + 4
+                                    
+                                    if next_x + next_word_w <= start_x + text_col_w then
+                                        reaper.ImGui_SameLine(ctx)
+                                    end
                                 end
                             end
-                            reaper.ImGui_PopStyleVar(ctx)
+                            reaper.ImGui_PopStyleColor(ctx, 3)
+                            reaper.ImGui_PopStyleVar(ctx, 2)
                         end
                     end
+                end
+            end
+            
+            if not rendered_inline then
+                if search and search ~= "" then
+                    local text_col_w = ui_dimensions.win_width - 10 - ui_dimensions.time_width - ui_dimensions.space_width
+                    draw_search_highlight(line, search, text_col_w)
+                else
+                    reaper.ImGui_Text(ctx, line)
                 end
             end
         end
