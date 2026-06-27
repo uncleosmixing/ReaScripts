@@ -361,6 +361,13 @@ local function main()
   else
     launch_cmd = string.format('%s > "%s" 2>&1 &', cmd, log_path)
   end
+  local launch_log = io.open(script_dir .. "rt_launch.log", "w")
+  if launch_log then
+    launch_log:write("cmd: " .. tostring(cmd) .. "\n")
+    launch_log:write("launch_cmd: " .. tostring(launch_cmd) .. "\n")
+    launch_log:close()
+  end
+
   local launched = os.execute(launch_cmd)
   if launched ~= true and launched ~= 0 then
     os.remove(items_path)
