@@ -53,7 +53,8 @@ The Uncle Os ReaPack repository contains:
 - Python 3.8 or newer
 - `faster-whisper` (installed automatically with `pip` when missing)
 - FFmpeg (installed automatically through WinGet on Windows when missing)
-- Whisper model `small` by default (downloaded automatically once when absent)
+- WhisperX with Whisper model `large-v3` by default; wav2vec2 performs
+  forced alignment for precise word timestamps
 
 The first dependency and model setup requires internet access. When the model is absent, ReaTitles downloads it once into the local Hugging Face cache; later transcriptions use the cached model offline.
 

@@ -311,7 +311,7 @@ def main():
         "detail": "Starting transcription",
         "item": 0, "total_items": 0, "current_file": "",
         "text": "", "elapsed": 0.0,
-        "backend": backend,
+        "backend": backend, "model": args.model,
     }
 
     def emit_progress(**changes):

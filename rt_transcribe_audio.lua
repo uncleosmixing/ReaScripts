@@ -1,5 +1,5 @@
 -- @description Transcribe audio items to subtitle text items (Whisper)
--- @version 1.8.4
+-- @version 1.8.5
 -- @author ReaTitles
 -- @changelog + Initial release
 -- @about
@@ -9,7 +9,7 @@
 --   Requires: Python 3.8+, faster-whisper, FFmpeg.
 
 local PYTHON_SCRIPT = "rt_whisper_transcribe.py"
-local WHISPER_MODEL = "small"
+local WHISPER_MODEL = "large-v3"
 local SUBTITLE_TRACK_NAME = "Subtitles"
 local r = reaper
 
@@ -515,8 +515,8 @@ local function main()
 
   local phase_labels = {
     starting = "Запуск",
-    model = "Загрузка модели Whisper",
-    model_ready = "Модель загружена",
+    model = "Загрузка WhisperX ASR",
+    model_ready = "WhisperX ASR загружен",
     extracting = "Подготовка аудио (FFmpeg)",
     transcribing = "Распознавание речи",
     item_done = "Фрагмент завершён",
@@ -588,6 +588,10 @@ local function main()
     progress_window_open = open ~= false
     if visible then
       local phase = phase_labels[p.phase] or tostring(p.detail or p.phase or "")
+      if p.phase == "model" and p.backend then
+        phase = phase .. " (" .. tostring(p.backend) .. ", " ..
+          tostring(p.model or WHISPER_MODEL) .. ")"
+      end
       r.ImGui_Text(progress_ctx, phase)
       r.ImGui_ProgressBar(
         progress_ctx, displayed_percent, -1, 24,
