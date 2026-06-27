@@ -1,5 +1,5 @@
 -- @description Transcribe audio items to subtitle text items (Whisper)
--- @version 1.2.5
+-- @version 1.2.6
 -- @author ReaTitles
 -- @changelog + Initial release
 -- @about
@@ -10,10 +10,11 @@
 
 local PYTHON_SCRIPT = "rt_whisper_transcribe.py"
 local SUBTITLE_TRACK_NAME = "Subtitles"
-local SCRIPT_VERSION = "1.2.5"
 local r = reaper
 
-local function msg(s) r.ShowConsoleMsg(tostring(s) .. "\n") end
+-- Normal users should not need the ReaScript console. Detailed diagnostics are
+-- written to rt_transcribe.log and rt_setup.log instead.
+local function msg(_) end
 
 local function get_script_dir()
   local info = debug.getinfo(1, "S")
@@ -100,7 +101,7 @@ local function ensure_dependencies(python, script_dir)
       else
         msg("[ReaTitles ERROR] Dependency installation failed. See rt_setup.log.")
         r.ShowMessageBox(
-          "Dependency installation failed.\n\nSee the REAPER console and:\n" ..
+          "Dependency installation failed.\n\nSee the setup log:\n" ..
           log_path, "ReaTitles setup", 0)
       end
       return
@@ -117,7 +118,7 @@ local function ensure_dependencies(python, script_dir)
         r.ImGui_Text(setup_ctx, string.format("Elapsed: %02d:%02d",
           math.floor(elapsed / 60), elapsed % 60))
         r.ImGui_TextWrapped(setup_ctx,
-          "REAPER is not frozen. Detailed output is shown in the ReaScript console.")
+          "REAPER is not frozen. Detailed output is written to rt_setup.log.")
         r.ImGui_End(setup_ctx)
       end
     end
@@ -331,8 +332,6 @@ local function main()
     items_path:gsub("\\","/"), output_path:gsub("\\","/"))
   cmd = cmd .. string.format(' --status "%s"', status_path:gsub("\\","/"))
   cmd = cmd .. string.format(' --progress "%s"', progress_path:gsub("\\","/"))
-  msg("[ReaTitles " .. SCRIPT_VERSION .. "] " .. cmd)
-
   local is_windows = r.GetOS():match("Win") ~= nil
   local launch_cmd
   if is_windows then

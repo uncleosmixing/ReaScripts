@@ -1,6 +1,6 @@
 -- @description Prompter
 -- @author Chirick, ReaTitles contributors
--- @version 1.2.0
+-- @version 1.2.6
 -- @changelog
 --   + Magnetic phrase editing, offline transcription and Word review round-trip
 -- @link https://github.com/uncleosmixing/ReaTitles
@@ -33,14 +33,10 @@
 -- Save commandID in ExtState]]
 
 if not reaper.ImGui_CreateContext then
-    local error_text =
-        "[ReaTitles ERROR] Missing dependency: ReaImGui.\n" ..
-        "Install ReaImGui through ReaPack, then restart REAPER.\n"
-    reaper.ShowConsoleMsg(error_text)
     reaper.ShowMessageBox(
         "Missing dependency: ReaImGui.\n\n" ..
         "Install ReaImGui through ReaPack, then restart REAPER.\n" ..
-        "Details were written to the REAPER console.",
+        "Install it and run Prompter again.",
         "ReaTitles dependency error", 0)
     return
 end

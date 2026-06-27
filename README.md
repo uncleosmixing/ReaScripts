@@ -52,7 +52,7 @@ Word exchange uses OpenXML directly and does not require Microsoft Word on the R
 
 ## Diagnostics
 
-Missing dependencies are reported in both a message box and the REAPER ReaScript console. The transcription log is stored beside the scripts as `rt_transcribe.log`.
+Missing dependencies are reported in message boxes. Detailed diagnostics are stored beside the scripts in `rt_transcribe.log` and `rt_setup.log`; normal use does not require the ReaScript console.
 
 ## Word workflow
 
