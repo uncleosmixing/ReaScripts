@@ -171,7 +171,7 @@ function M.snap_word_to_onset(take, w_start, prev_end_time)
   
   local numchannels = 1
   local want_extra_type = 0
-  local peaks = reaper.array(numchannels * numsamples * 2)
+  local peaks = reaper.new_array(numchannels * numsamples * 2)
   
   local retval = reaper.GetMediaItemTake_Peaks(
     take, peakrate, search_start, numchannels, numsamples, want_extra_type, peaks
@@ -182,9 +182,9 @@ function M.snap_word_to_onset(take, w_start, prev_end_time)
   local max_vals = {}
   local global_max = 0
   local global_min = 1
-  for idx = 1, numsamples do
+  for idx = 0, numsamples - 1 do
     local val = math.abs(peaks[idx] or 0)
-    max_vals[idx] = val
+    max_vals[idx + 1] = val
     if val > global_max then global_max = val end
     if val < global_min then global_min = val end
   end
