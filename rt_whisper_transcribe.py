@@ -217,7 +217,9 @@ def transcribe_file(model, filepath, language="ru", duration=0, progress=None):
         beam_size=5,
         patience=1.2,
         temperature=0.0,
-        condition_on_previous_text=False
+        condition_on_previous_text=False,
+        suppress_silence=True,
+        vad=True
     )
     result_data = []
     for seg in result.segments:
