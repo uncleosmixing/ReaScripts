@@ -1,5 +1,5 @@
 -- @description Detect breaths and create volume automation (YAMNet ONNX)
--- @version 1.0.0
+-- @version 1.0.1
 -- @author ReaTitles
 -- @changelog + Initial release
 -- @about
