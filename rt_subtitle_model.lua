@@ -183,11 +183,24 @@ function M.snap_word_to_onset(take, w_start, prev_end_time)
     actual_samples = numsamples
   end
   
+  local tbl = peaks.table()
+  local tbl_len = #tbl
+  
+  -- Print diagnostics to REAPER Console
+  reaper.ShowConsoleMsg(string.format(
+    "[Onset Sync] w_start: %.3f, retval: %d, actual_samples: %d, requested: %d, peaks_len: %d\n",
+    w_start, retval, actual_samples, numsamples, tbl_len
+  ))
+  
+  -- Safe guard actual_samples against the converted table length
+  local safe_samples = math.min(actual_samples, math.floor(tbl_len / 2))
+  if safe_samples <= 0 then return w_start end
+  
   local max_vals = {}
   local global_max = 0
   local global_min = 1
-  for idx = 0, actual_samples - 1 do
-    local val = math.abs(peaks[idx] or 0)
+  for idx = 0, safe_samples - 1 do
+    local val = math.abs(tbl[idx + 1] or 0)
     max_vals[idx + 1] = val
     if val > global_max then global_max = val end
     if val < global_min then global_min = val end
@@ -201,7 +214,7 @@ function M.snap_word_to_onset(take, w_start, prev_end_time)
   threshold = math.max(threshold, 0.008)
   
   local onset_idx = nil
-  for idx = 1, actual_samples - 1 do
+  for idx = 1, safe_samples - 1 do
     if max_vals[idx] >= threshold and max_vals[idx + 1] >= threshold then
       onset_idx = idx
       break
