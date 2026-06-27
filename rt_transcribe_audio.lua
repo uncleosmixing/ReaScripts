@@ -1,5 +1,5 @@
 -- @description Transcribe audio items to subtitle text items (Whisper)
--- @version 1.7.0
+-- @version 1.7.1
 -- @author ReaTitles
 -- @changelog + Initial release
 -- @about
@@ -18,21 +18,37 @@ local function msg(_) end
 
 local function export_take_to_wav(take, start_time, duration, output_path)
   local accessor = r.CreateTakeAudioAccessor(take)
-  if not accessor then return false end
+  if not accessor then
+    reaper.ShowConsoleMsg("[WAV Export] Failed to create AudioAccessor\n")
+    return false
+  end
+  
+  -- AudioAccessor reads in project time.
+  -- GetAudioAccessorStartTime gives the project position of the take's first sample.
+  local accessor_start = r.GetAudioAccessorStartTime(accessor)
   
   local sample_rate = 16000
   local channels = 1
   local num_samples = math.floor(duration * sample_rate)
   if num_samples <= 0 then
     r.DestroyAudioAccessor(accessor)
+    reaper.ShowConsoleMsg("[WAV Export] num_samples <= 0, duration=" .. tostring(duration) .. "\n")
     return false
   end
   
+  reaper.ShowConsoleMsg(string.format(
+    "[WAV Export] accessor_start=%.3f start_time=%.3f duration=%.3f num_samples=%d out=%s\n",
+    accessor_start, start_time, duration, num_samples, output_path))
+  
   local buffer = r.new_array(num_samples)
-  local ok = r.GetAudioAccessorSamples(accessor, sample_rate, channels, start_time, num_samples, buffer)
+  -- Read from the accessor starting at accessor_start (the take's first sample in project time)
+  local ok = r.GetAudioAccessorSamples(accessor, sample_rate, channels, accessor_start, num_samples, buffer)
   r.DestroyAudioAccessor(accessor)
   
-  if ok <= 0 then return false end
+  if ok ~= 1 then
+    reaper.ShowConsoleMsg("[WAV Export] GetAudioAccessorSamples returned " .. tostring(ok) .. "\n")
+    return false
+  end
   
   local tbl = buffer.table()
   local sample_strings = {}
@@ -43,16 +59,20 @@ local function export_take_to_wav(take, start_time, duration, output_path)
   local pcm_data = table.concat(sample_strings)
   local data_size = #pcm_data
   local file_size = data_size + 44
-  
+  -- WAV header: RIFF, filesize, WAVE, fmt, chunksize=16, PCM=1, ch=1, sr=16000, byterate=32000, blockalign=2, bits=16, data, datasize
   local header = string.pack("<c4 I4 c4 c4 I4 H H I4 I4 H H c4 I4",
     "RIFF", file_size - 8, "WAVE", "fmt ", 16, 1, 1, 16000, 32000, 2, 16, "data", data_size
   )
   
   local f = io.open(output_path, "wb")
-  if not f then return false end
+  if not f then
+    reaper.ShowConsoleMsg("[WAV Export] Cannot open file for writing: " .. output_path .. "\n")
+    return false
+  end
   f:write(header)
   f:write(pcm_data)
   f:close()
+  reaper.ShowConsoleMsg("[WAV Export] OK -> " .. output_path .. " (" .. tostring(data_size) .. " bytes PCM)\n")
   return true
 end
 
@@ -372,12 +392,16 @@ local function main()
     if item then
       local take = r.GetActiveTake(item)
       if take then
+        local item_pos = r.GetMediaItemInfo_Value(item, "D_POSITION")
         local len = r.GetMediaItemInfo_Value(item, "D_LENGTH")
         local rate = r.GetMediaItemTakeInfo_Value(take, "D_PLAYRATE")
         local offs = r.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS")
         local src_off = math.max(0, offs)
         local item_idx = #items_json + 1
         local temp_wav_path = script_dir .. "rt_temp_item_" .. item_idx .. ".wav"
+        reaper.ShowConsoleMsg(string.format(
+          "[Transcribe] Item %d: pos=%.3f len=%.3f rate=%.3f src_off=%.3f\n",
+          item_idx, item_pos, len, rate, src_off))
         if export_take_to_wav(take, src_off, len * rate, temp_wav_path) then
           items_json[#items_json+1] = {
             wav = temp_wav_path,
@@ -385,13 +409,15 @@ local function main()
             index = item_idx
           }
           source_items[#source_items+1] = item
+        else
+          reaper.ShowConsoleMsg("[Transcribe] WAV export FAILED for item " .. item_idx .. "\n")
         end
       end
     end
   end
 
   if #items_json == 0 then
-    r.ShowMessageBox("No audio items found.", "ReaTitles", 0)
+    r.ShowMessageBox("No audio items could be prepared for transcription.\n\nMake sure audio items are selected and that REAPER has finished loading their peaks.\n\nSee REAPER Console for detailed diagnostic info.", "ReaTitles", 0)
     return
   end
 
