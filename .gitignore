@@ -3,6 +3,8 @@ rt_items.json
 rt_output.json
 rt_status.json
 rt_progress.json
+rt_setup.log
+rt_setup_status.txt
 *.tmp
 *.rpp
 *.rpp-bak

@@ -1,5 +1,5 @@
 -- @description Transcribe audio items to subtitle text items (Whisper)
--- @version 1.2.1
+-- @version 1.2.2
 -- @author ReaTitles
 -- @changelog + Initial release
 -- @about
@@ -34,43 +34,86 @@ local function find_python()
   return nil
 end
 
-local function ensure_faster_whisper(python)
+local function ensure_faster_whisper(python, script_dir)
   local check = os.execute(python .. ' -c "import faster_whisper"')
   if check == true or check == 0 then return true end
 
-  msg("[ReaTitles SETUP] Installing missing Python package faster-whisper...")
-  msg("[ReaTitles SETUP] Internet access is required for this one-time setup.")
-  local command = python ..
-    ' -m pip install --user --disable-pip-version-check faster-whisper'
-  local exit_code, output = r.ExecProcess(command, 600000)
-  if output and output ~= "" then msg("[ReaTitles pip]\n" .. output) end
+  local installer = script_dir .. "rt_install_dependencies.py"
+  if not r.file_exists(installer) then
+    msg("[ReaTitles ERROR] Missing installer helper: " .. installer)
+    r.ShowMessageBox("Dependency installer is missing.\nUpdate ReaTitles through ReaPack.",
+      "ReaTitles dependency error", 0)
+    return false
+  end
 
-  if tonumber(exit_code) ~= 0 then
-    msg("[ReaTitles SETUP] pip is unavailable; initializing pip...")
-    local pip_code, pip_output =
-      r.ExecProcess(python .. ' -m ensurepip --upgrade', 300000)
-    if pip_output and pip_output ~= "" then
-      msg("[ReaTitles ensurepip]\n" .. pip_output)
-    end
-    if tonumber(pip_code) == 0 then
-      exit_code, output = r.ExecProcess(command, 600000)
-      if output and output ~= "" then
-        msg("[ReaTitles pip retry]\n" .. output)
+  local status_path = script_dir .. "rt_setup_status.txt"
+  local log_path = script_dir .. "rt_setup.log"
+  os.remove(status_path)
+  os.remove(log_path)
+  local command = string.format(
+    'cmd.exe /D /S /C start "" /B %s "%s" --status "%s" --log "%s"',
+    python, installer, status_path, log_path)
+  local launched = os.execute(command)
+  if launched ~= true and launched ~= 0 then
+    msg("[ReaTitles ERROR] Could not start dependency installer.")
+    return false
+  end
+
+  msg("[ReaTitles SETUP] Installing faster-whisper in the background.")
+  msg("[ReaTitles SETUP] REAPER remains available. Run transcription again after success.")
+  local started = r.time_precise()
+  local shown_bytes = 0
+  local setup_ctx = r.ImGui_CreateContext and
+                    r.ImGui_CreateContext("ReaTitles Setup") or nil
+
+  local function poll_setup()
+    local log = io.open(log_path, "r")
+    if log then
+      local content = log:read("*a") or ""
+      log:close()
+      if #content > shown_bytes then
+        msg(content:sub(shown_bytes + 1))
+        shown_bytes = #content
       end
     end
-  end
 
-  check = os.execute(python .. ' -c "import faster_whisper"')
-  if check == true or check == 0 then
-    msg("[ReaTitles SETUP] faster-whisper installed successfully.")
-    return true
-  end
+    local status = io.open(status_path, "r")
+    if status then
+      local code = tonumber(status:read("*a"))
+      status:close()
+      os.remove(status_path)
+      if code == 0 then
+        msg("[ReaTitles SETUP] faster-whisper installed successfully.")
+        r.ShowMessageBox(
+          "faster-whisper installed successfully.\n\nRun transcription again.",
+          "ReaTitles setup", 0)
+      else
+        msg("[ReaTitles ERROR] Dependency installation failed. See rt_setup.log.")
+        r.ShowMessageBox(
+          "Dependency installation failed.\n\nSee the REAPER console and:\n" ..
+          log_path, "ReaTitles setup", 0)
+      end
+      return
+    end
 
-  msg("[ReaTitles ERROR] Automatic faster-whisper installation failed.")
-  r.ShowMessageBox(
-    "Could not install faster-whisper automatically.\n\n" ..
-    "Check the REAPER console and verify internet access.",
-    "ReaTitles dependency error", 0)
+    if setup_ctx then
+      r.ImGui_SetNextWindowSize(setup_ctx, 430, 0, r.ImGui_Cond_FirstUseEver())
+      local visible = r.ImGui_Begin(
+        setup_ctx, "ReaTitles — Installing dependencies", true,
+        r.ImGui_WindowFlags_AlwaysAutoResize())
+      if visible then
+        local elapsed = math.floor(r.time_precise() - started)
+        r.ImGui_Text(setup_ctx, "Installing faster-whisper in the background...")
+        r.ImGui_Text(setup_ctx, string.format("Elapsed: %02d:%02d",
+          math.floor(elapsed / 60), elapsed % 60))
+        r.ImGui_TextWrapped(setup_ctx,
+          "REAPER is not frozen. Detailed output is shown in the ReaScript console.")
+        r.ImGui_End(setup_ctx)
+      end
+    end
+    r.defer(poll_setup)
+  end
+  r.defer(poll_setup)
   return false
 end
 
@@ -221,7 +264,7 @@ local function main()
 
   local script_dir = get_script_dir()
 
-  if not ensure_faster_whisper(python) then return end
+  if not ensure_faster_whisper(python, script_dir) then return end
 
   -- Collect items
   local items_json = {}
