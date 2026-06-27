@@ -675,12 +675,70 @@ function M.reconcile_project(subtitle_model)
   return changed, stats
 end
 
-function M.rebuild_take_markers(audio_item)
+function M.rebuild_take_markers(audio_item, subtitle_model)
   local take = r.GetActiveTake(audio_item)
   if not take then return false end
+  
   local words_str = get_string(audio_item, M.SOURCE_WORDS_KEY)
-  if words_str == "" then return false end
-  local words = M.parse_source_words(words_str)
+  local words = {}
+  
+  if words_str ~= "" then
+    words = M.parse_source_words(words_str)
+  else
+    -- Try to migrate from grouped subtitle item!
+    local group_id = r.GetMediaItemInfo_Value(audio_item, "I_GROUPID")
+    if group_id > 0 and subtitle_model then
+      -- Find grouped subtitle item
+      local sub_item = nil
+      for i = 0, r.CountTracks(0) - 1 do
+        local tr = r.GetTrack(0, i)
+        local _, name = r.GetTrackName(tr)
+        if name == M.SUBTITLE_TRACK_NAME then
+          for j = 0, r.CountTrackMediaItems(tr) - 1 do
+            local item = r.GetTrackMediaItem(tr, j)
+            if r.GetMediaItemInfo_Value(item, "I_GROUPID") == group_id then
+              sub_item = item
+              break
+            end
+          end
+          break
+        end
+      end
+      
+      if sub_item then
+        local sub_words = subtitle_model.get_relative_words(sub_item, true)
+        if #sub_words > 0 then
+          local audio_pos = r.GetMediaItemInfo_Value(audio_item, "D_POSITION")
+          local sub_pos = r.GetMediaItemInfo_Value(sub_item, "D_POSITION")
+          local start_offs = r.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS")
+          local playrate = r.GetMediaItemTakeInfo_Value(take, "D_PLAYRATE")
+          if playrate <= 0 then playrate = 1 end
+          
+          for _, sw in ipairs(sub_words) do
+            local tl_start = sub_pos + sw[1]
+            local tl_end = sub_pos + sw[2]
+            local src_start = start_offs + (tl_start - audio_pos) * playrate
+            local src_end = start_offs + (tl_end - audio_pos) * playrate
+            table.insert(words, { src_start, src_end, sw[3] })
+          end
+          
+          -- Save to audio item
+          set_string(audio_item, M.SOURCE_WORDS_KEY, M.serialize_source_words(words))
+          set_string(audio_item, M.MANAGED_AUDIO_KEY, "1")
+          -- Set phrase ID if not set
+          local phrase_id = get_string(audio_item, M.PHRASE_ID_KEY)
+          if phrase_id == "" then
+            phrase_id = get_string(sub_item, M.PHRASE_ID_KEY)
+            if phrase_id == "" then phrase_id = M.new_phrase_id() end
+            set_string(audio_item, M.PHRASE_ID_KEY, phrase_id)
+            set_string(sub_item, M.PHRASE_ID_KEY, phrase_id)
+          end
+        end
+      end
+    end
+  end
+  
+  if #words == 0 then return false end
   
   local num_markers = r.GetNumTakeMarkers(take)
   for i = num_markers - 1, 0, -1 do

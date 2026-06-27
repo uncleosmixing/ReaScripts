@@ -1,6 +1,6 @@
 -- @description Prompter
 -- @author Chirick, ReaTitles contributors
--- @version 1.4.2
+-- @version 1.4.3
 -- @changelog
 --   + Magnetic phrase editing, offline transcription and Word review round-trip
 -- @link https://github.com/uncleosmixing/ReaTitles
@@ -1972,7 +1972,7 @@ local function rebuild_markers_for_selected()
     for i = 0, sel_count - 1 do
         local item = reaper.GetSelectedMediaItem(0, i)
         if item then
-            local ok = montage_model.rebuild_take_markers(item)
+            local ok = montage_model.rebuild_take_markers(item, subtitle_model)
             if ok then rebuilt = rebuilt + 1 end
         end
     end
