@@ -340,7 +340,7 @@ local function main()
   os.remove(progress_path)
   os.remove(progress_path .. ".tmp")
   os.remove(log_path)
-  local cmd = string.format('%s "%s%s" --items "%s" --output "%s" --model small',
+  local cmd = string.format('%s "%s%s" --items "%s" --output "%s" --model large-v3',
     python, script_dir, PYTHON_SCRIPT,
     items_path:gsub("\\","/"), output_path:gsub("\\","/"))
   cmd = cmd .. string.format(' --status "%s"', status_path:gsub("\\","/"))
