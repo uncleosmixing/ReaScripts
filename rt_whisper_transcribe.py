@@ -187,12 +187,12 @@ def create_model(model_size="small", progress=None):
             f"[Whisper] Model '{model_size}' is not cached. "
             "Downloading it once from Hugging Face...", file=sys.stderr)
 
-    from faster_whisper import WhisperModel
+    import stable_whisper
     print(
         f"[Whisper] Loading model '{model_source}' "
         f"(CPU, int8, {CPU_COUNT} threads)...", file=sys.stderr)
     t0 = time.time()
-    model = WhisperModel(
+    model = stable_whisper.load_faster_whisper(
         model_source,
         device="cpu",
         compute_type="int8",
@@ -211,22 +211,16 @@ def create_model(model_size="small", progress=None):
 def transcribe_file(model, filepath, language="ru", duration=0, progress=None):
     print(f"[Whisper] Transcribing {os.path.basename(filepath)}...", file=sys.stderr)
     t0 = time.time()
-    segments, info = model.transcribe(
+    result = model.transcribe_stable(
         filepath,
         language=language,
         beam_size=5,
         patience=1.2,
         temperature=0.0,
-        condition_on_previous_text=False,
-        word_timestamps=True,
-        vad_filter=True,
-        vad_parameters=dict(
-            min_silence_duration_ms=180,
-            speech_pad_ms=60,
-            threshold=0.35
-        ))
-    result = []
-    for seg in segments:
+        condition_on_previous_text=False
+    )
+    result_data = []
+    for seg in result.segments:
         text = seg.text.strip()
         if text:
             words = []
@@ -237,7 +231,7 @@ def transcribe_file(model, filepath, language="ru", duration=0, progress=None):
                         round(word.end, 3),
                         word.word,
                     ])
-            result.append([round(seg.start, 3), round(seg.end, 3), text, words])
+            result_data.append([round(seg.start, 3), round(seg.end, 3), text, words])
             print(f"[Whisper] {seg.start:.2f}-{seg.end:.2f}: {text}", file=sys.stderr)
         if progress:
             local_fraction = min(1.0, seg.end / duration) if duration > 0 else 0.0
@@ -249,7 +243,7 @@ def transcribe_file(model, filepath, language="ru", duration=0, progress=None):
                 print(f"[Progress] Update skipped: {exc}", file=sys.stderr)
     elapsed = time.time() - t0
     print(f"[Whisper] Done in {elapsed:.1f}s", file=sys.stderr)
-    return result
+    return result_data
 
 
 def main():
