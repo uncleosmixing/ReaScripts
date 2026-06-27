@@ -1,0 +1,8 @@
+rt_transcribe.log
+rt_items.json
+rt_output.json
+rt_status.json
+rt_progress.json
+*.tmp
+*.rpp
+*.rpp-bak

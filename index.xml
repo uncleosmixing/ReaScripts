@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<index version="1" name="ReaTitles">
+  <category name="Various">
+    <reapack name="ReaTitles - Prompter.lua" type="script" desc="Subtitle, dialogue editing, offline transcription and Word review toolkit">
+      <metadata>
+        <description><![CDATA[
+# ReaTitles
+
+Prompter, subtitle import, offline faster-whisper transcription, phrase colors, magnetic editing and Word review round-trip.
+
+Requires ReaImGui. See README.md for optional transcription dependencies.
+        ]]></description>
+      </metadata>
+      <version name="1.1.0" author="Chirick, ReaTitles contributors">
+        <source main="main">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/ch_prompter.lua</source>
+        <source file="ch_import_text_items_from_sub.lua" main="main">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/ch_import_text_items_from_sub.lua</source>
+        <source file="rt_transcribe_audio.lua" main="main">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_transcribe_audio.lua</source>
+        <source file="rt_smart_split.lua" main="main">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_smart_split.lua</source>
+        <source file="ch_SubOverlay.lua">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/ch_SubOverlay.lua</source>
+        <source file="rt_whisper_transcribe.py">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_whisper_transcribe.py</source>
+        <source file="rt_word_bridge.ps1">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_word_bridge.ps1</source>
+        <source file="rt_word_roundtrip.lua">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_word_roundtrip.lua</source>
+        <source file="README.md">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/README.md</source>
+      </version>
+    </reapack>
+  </category>
+</index>
