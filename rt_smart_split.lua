@@ -1,5 +1,5 @@
 -- @description ReaTitles Smart Split
--- @version 1.3.1
+-- @version 1.4.0
 -- @author ReaTitles
 -- @about
 --   Split selected subtitle/audio groups at the edit cursor.
@@ -15,6 +15,16 @@ if not model_ok then
   r.ShowMessageBox(
     "ReaTitles installation is incomplete: rt_subtitle_model.lua is missing.\n\n" ..
     tostring(subtitle_model),
+    "ReaTitles dependency error", 0)
+  return
+end
+
+local montage_ok, montage_model =
+  pcall(dofile, script_dir .. "rt_montage_model.lua")
+if not montage_ok then
+  r.ShowMessageBox(
+    "ReaTitles installation is incomplete: rt_montage_model.lua is missing.\n\n" ..
+    tostring(montage_model),
     "ReaTitles dependency error", 0)
   return
 end
@@ -133,6 +143,7 @@ local function collect_targets(cursor)
             pos = pos,
             item_end = item_end,
             group_id = group_id,
+            phrase_id = montage_model.get_phrase_id(item),
             notes = get_string(item, "P_NOTES"),
             words = (not r.GetActiveTake(item))
               and subtitle_model.get_relative_words(item, false) or {},
@@ -189,6 +200,8 @@ local function main()
     group_map[old_group] = {
       left = ids[(index - 1) * 2 + 1],
       right = ids[(index - 1) * 2 + 2],
+      left_phrase = montage_model.new_phrase_id(),
+      right_phrase = montage_model.new_phrase_id(),
     }
   end
 
@@ -204,6 +217,10 @@ local function main()
           if groups then
             r.SetMediaItemInfo_Value(target.item, "I_GROUPID", groups.left)
             r.SetMediaItemInfo_Value(right, "I_GROUPID", groups.right)
+            if target.phrase_id ~= "" then
+              montage_model.set_phrase_id(target.item, groups.left_phrase)
+              montage_model.set_phrase_id(right, groups.right_phrase)
+            end
           end
 
           if target.notes ~= "" or #target.words > 0 then
@@ -246,6 +263,8 @@ local function main()
 
   if not ok then
     r.ShowMessageBox(tostring(err), "ReaTitles Smart Split", 0)
+  else
+    montage_model.reconcile_project(subtitle_model)
   end
 end
 

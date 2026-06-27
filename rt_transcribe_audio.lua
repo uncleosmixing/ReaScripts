@@ -1,5 +1,5 @@
 -- @description Transcribe audio items to subtitle text items (Whisper)
--- @version 1.3.1
+-- @version 1.4.0
 -- @author ReaTitles
 -- @changelog + Initial release
 -- @about
@@ -31,6 +31,16 @@ if not model_ok then
   r.ShowMessageBox(
     "ReaTitles installation is incomplete: rt_subtitle_model.lua is missing.\n\n" ..
     tostring(subtitle_model),
+    "ReaTitles dependency error", 0)
+  return
+end
+
+local montage_ok, montage_model =
+  pcall(dofile, get_script_dir() .. "rt_montage_model.lua")
+if not montage_ok then
+  r.ShowMessageBox(
+    "ReaTitles installation is incomplete: rt_montage_model.lua is missing.\n\n" ..
+    tostring(montage_model),
     "ReaTitles dependency error", 0)
   return
 end
@@ -648,6 +658,8 @@ end
           local take = r.GetActiveTake(src_item)
           local rate = take and r.GetMediaItemTakeInfo_Value(take, "D_PLAYRATE") or 1
           if rate <= 0 then rate = 1 end
+          local source_offset = take and
+            r.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS") or 0
           local item_end = item_pos + item_len
           table.sort(segments, function(a, b) return a[1] < b[1] end)
 
@@ -713,6 +725,8 @@ end
                   local sub_item = create_text_item(sub_track, seg_start, seg_end, seg[3])
                   if sub_item then
                     store_word_timing(sub_item, seg[4], item_pos, rate)
+                    montage_model.register_transcribed_phrase(
+                      speech_piece, sub_item, seg[4], source_offset)
                     r.SetMediaItemInfo_Value(speech_piece, "I_GROUPID", next_group)
                     r.SetMediaItemInfo_Value(sub_item, "I_GROUPID", next_group)
                     next_group = next_group + 1

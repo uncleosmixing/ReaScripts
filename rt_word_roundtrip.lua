@@ -2,6 +2,14 @@ local r = reaper
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:match("^@(.+[\\/])") or "")
 local BRIDGE = SCRIPT_DIR .. "rt_word_bridge.ps1"
 local ID_KEY = "P_EXT:REATITLES_DOC_ID"
+local montage_ok, montage_model =
+  pcall(dofile, SCRIPT_DIR .. "rt_montage_model.lua")
+if not montage_ok then
+  r.ShowMessageBox(
+    "ReaTitles installation is incomplete: rt_montage_model.lua is missing.\n\n" ..
+    tostring(montage_model), "ReaTitles dependency error", 0)
+  return
+end
 
 local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 local function b64encode(data)
@@ -160,6 +168,7 @@ local function import_word()
     local old=r.GetMediaItemInfo_Value(item,"D_POSITION")
     local delta=cursor-old
     r.GetSetMediaItemInfo_String(item,"P_NOTES",row.text,true)
+    montage_model.mark_manual_text(item)
     r.SetMediaItemPosition(item,cursor,false)
     local color=0
     local rr,gg,bb=row.rgb:match("^(%d+),(%d+),(%d+)$")

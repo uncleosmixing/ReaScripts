@@ -1,6 +1,6 @@
 -- @description Prompter
 -- @author Chirick, ReaTitles contributors
--- @version 1.3.3
+-- @version 1.4.0
 -- @changelog
 --   + Magnetic phrase editing, offline transcription and Word review round-trip
 -- @link https://github.com/uncleosmixing/ReaTitles
@@ -10,6 +10,7 @@
 --   [main] rt_smart_split.lua
 --   [nomain] ch_SubOverlay.lua
 --   [nomain] rt_subtitle_model.lua
+--   [nomain] rt_montage_model.lua
 --   [nomain] rt_whisper_transcribe.py
 --   [nomain] rt_word_bridge.ps1
 --   [nomain] rt_word_roundtrip.lua
@@ -50,6 +51,16 @@ if not model_ok then
     reaper.ShowMessageBox(
         "ReaTitles installation is incomplete: rt_subtitle_model.lua is missing.\n\n" ..
         tostring(subtitle_model),
+        "ReaTitles dependency error", 0)
+    return
+end
+
+local montage_ok, montage_model =
+    pcall(dofile, script_dir .. "rt_montage_model.lua")
+if not montage_ok then
+    reaper.ShowMessageBox(
+        "ReaTitles installation is incomplete: rt_montage_model.lua is missing.\n\n" ..
+        tostring(montage_model),
         "ReaTitles dependency error", 0)
     return
 end
@@ -375,6 +386,8 @@ local search = ""  -- search string
 local smooth_scroll_enabled = false
 local scroll_speed = 0.05
 local auto_update_enabled = true
+local montage_sync_due = nil
+local MONTAGE_SYNC_DEBOUNCE = 0.20
 
 -- Theme colors
 local theme = {
@@ -808,6 +821,9 @@ local function collect_text_items()
             local len = reaper.GetMediaItemInfo_Value(it, "D_LENGTH")
             local _, notes = reaper.GetSetMediaItemInfo_String(it, "P_NOTES", "", false)
             if notes ~= "" then
+                local review = montage_model.get_phrase_id(it) ~= "" and
+                    subtitle_model.get_string(
+                        it, montage_model.REVIEW_KEY) or ""
                 if ignore_newlines then notes = string.gsub(notes, "\n", " ") end
                 items[#items+1] = {
                     start_time = pos,
@@ -820,6 +836,7 @@ local function collect_text_items()
                     item_ptr   = it,
                     group_id   = reaper.GetMediaItemInfo_Value(it, "I_GROUPID"),
                     custom_color = reaper.GetMediaItemInfo_Value(it, "I_CUSTOMCOLOR"),
+                    review = review,
                 }
             end
         end
@@ -884,6 +901,16 @@ local function find_grouped_items(sub_item)
     -- A properly created ReaTitles phrase owns one media item through a unique
     -- group ID. Keep that relationship even if an earlier failed move already
     -- shifted audio and subtitle to slightly different positions.
+    if #same_group >= 1 and montage_model.get_phrase_id(sub_item) ~= "" then
+        -- The montage synchronizer makes one temporary REAPER group per
+        -- projected phrase cluster. A phrase can legitimately contain several
+        -- audio descendants after a breath or silence was removed.
+        local managed = {}
+        for _, candidate in ipairs(same_group) do
+            managed[#managed + 1] = candidate.ptr
+        end
+        return managed
+    end
     if #same_group == 1 then
         return { same_group[1].ptr }
     end
@@ -942,16 +969,10 @@ local function save_element_text(element, text)
     end
     if element.item_ptr and reaper.ValidatePtr(element.item_ptr, "MediaItem*") then
         reaper.GetSetMediaItemInfo_String(element.item_ptr, "P_NOTES", text, true)
-        -- Manual text no longer has a trustworthy correspondence with the
-        -- original Whisper words, so do not overwrite the edit on next scan.
-        subtitle_model.set_string(
-            element.item_ptr, subtitle_model.RELATIVE_TIMING_KEY, "")
-        subtitle_model.set_string(
-            element.item_ptr, subtitle_model.LEGACY_TIMING_KEY, "")
-        subtitle_model.set_string(
-            element.item_ptr, subtitle_model.TIMING_ANCHOR_KEY, "")
-        subtitle_model.set_string(
-            element.item_ptr, subtitle_model.TIMING_LENGTH_KEY, "")
+        -- Preserve source-word timing: it lets ordinary REAPER edits
+        -- distinguish removed silence from removed speech. The montage model
+        -- keeps this manual text while the active word signature is unchanged.
+        montage_model.mark_manual_text(element.item_ptr)
         local take = reaper.GetActiveTake(element.item_ptr)
         if take then
             local short = text
@@ -1284,6 +1305,7 @@ local function create_combined_list()
                     item_ptr = item.item_ptr,
                     group_id = item.group_id,
                     custom_color = item.custom_color,
+                    review = item.review,
                 }
             end
         end
@@ -2238,6 +2260,9 @@ local function draw_list()
         end
         if r.type == "text_item" then
             element_color = item_color_to_rgba(r.custom_color) or element_color
+            if r.review and r.review ~= "" then
+                element_color = 0xFF9F43FF
+            end
         end
         
         -- Calculate central_scale AFTER defining element_scale for specific type
@@ -2676,107 +2701,15 @@ local function split_subtitle_item(sub_item, split_pos)
     return right_item
 end
 
-local function sync_subtitles_to_audio()
-    local sub_track = nil
-    for i = 0, reaper.CountTracks(0) - 1 do
-        local tr = reaper.GetTrack(0, i)
-        local _, name = reaper.GetTrackName(tr)
-        if name == "Subtitles" then
-            sub_track = tr
-            break
-        end
-    end
-    if not sub_track then return end
-
-    -- Collect all subtitle items by group_id
-    local subs_by_group = {}
-    for i = 0, reaper.CountTrackMediaItems(sub_track) - 1 do
-        local item = reaper.GetTrackMediaItem(sub_track, i)
-        local group_id = reaper.GetMediaItemInfo_Value(item, "I_GROUPID")
-        if group_id > 0 then
-            if not subs_by_group[group_id] then subs_by_group[group_id] = {} end
-            table.insert(subs_by_group[group_id], item)
-        end
-    end
-
-    -- Collect all audio items by group_id from non-subtitle tracks
-    local audios_by_group = {}
-    for i = 0, reaper.CountTracks(0) - 1 do
-        local tr = reaper.GetTrack(0, i)
-        if tr ~= sub_track then
-            for j = 0, reaper.CountTrackMediaItems(tr) - 1 do
-                local item = reaper.GetTrackMediaItem(tr, j)
-                local group_id = reaper.GetMediaItemInfo_Value(item, "I_GROUPID")
-                if group_id > 0 then
-                    if not audios_by_group[group_id] then audios_by_group[group_id] = {} end
-                    table.insert(audios_by_group[group_id], item)
-                end
-            end
-        end
-    end
-
-    local all_groups = {}
-    for g, _ in pairs(subs_by_group) do all_groups[g] = true end
-    for g, _ in pairs(audios_by_group) do all_groups[g] = true end
-
-    local changed = false
-
-    for g, _ in pairs(all_groups) do
-        local subs   = subs_by_group[g]   or {}
-        local audios = audios_by_group[g] or {}
-
-        -- Case 1: no audio at all for this group → delete subtitle items
-        if #audios == 0 and #subs > 0 then
-            if not changed then
-                reaper.Undo_BeginBlock()
-                reaper.PreventUIRefresh(1)
-                changed = true
-            end
-            for _, sub_item in ipairs(subs) do
-                if reaper.ValidatePtr(sub_item, "MediaItem*") then
-                    reaper.DeleteTrackMediaItem(sub_track, sub_item)
-                end
-            end
-
-        -- Case 2: both audio and subtitles exist
-        elseif #audios > 0 and #subs > 0 then
-
-            -- Build lookup: for each subtitle item get its time range
-            local function overlaps_any_sub(audio_pos, audio_end)
-                for _, sub_item in ipairs(subs) do
-                    if reaper.ValidatePtr(sub_item, "MediaItem*") then
-                        local sp = reaper.GetMediaItemInfo_Value(sub_item, "D_POSITION")
-                        local se = sp + reaper.GetMediaItemInfo_Value(sub_item, "D_LENGTH")
-                        local ov = math.min(audio_end, se) - math.max(audio_pos, sp)
-                        if ov > 0.02 then return true end
-                    end
-                end
-                return false
-            end
-
-            -- For each audio item: if it does NOT overlap any subtitle → ungroup it
-            for _, audio_item in ipairs(audios) do
-                if reaper.ValidatePtr(audio_item, "MediaItem*") then
-                    local ap = reaper.GetMediaItemInfo_Value(audio_item, "D_POSITION")
-                    local ae = ap + reaper.GetMediaItemInfo_Value(audio_item, "D_LENGTH")
-                    if not overlaps_any_sub(ap, ae) then
-                        if not changed then
-                            reaper.Undo_BeginBlock()
-                            reaper.PreventUIRefresh(1)
-                            changed = true
-                        end
-                        -- Remove from group (set group id to 0)
-                        reaper.SetMediaItemInfo_Value(audio_item, "I_GROUPID", 0)
-                    end
-                end
-            end
-        end
-    end
-
-    if changed then
-        reaper.PreventUIRefresh(-1)
-        reaper.UpdateArrange()
-        reaper.Undo_EndBlock("ReaTitles: Ungroup breath/silence items", -1)
+-- The montage model owns subtitle geometry and temporary REAPER groups.
+-- Native Split is intentionally allowed to duplicate item metadata; this pass
+-- resolves the descendants from their retained source-word coverage.
+local function synchronize_montage()
+    local _, _, sync_error =
+        montage_model.reconcile_project(subtitle_model)
+    if sync_error and debug_mode then
+        reaper.ShowConsoleMsg(
+            "[ReaTitles montage sync]\n" .. tostring(sync_error) .. "\n")
     end
 end
 
@@ -2796,7 +2729,18 @@ local function loop()
         drag_drop_idx = nil
         drag_offset_y = nil
         drag_start_y = nil
-        sync_subtitles_to_audio()
+        montage_sync_due = cur_time + MONTAGE_SYNC_DEBOUNCE
+        invalidate_combined_cache()
+        update()
+    end
+
+    -- Wait until REAPER has finished a drag/trim/ripple gesture. Repeated
+    -- project changes keep pushing the deadline, so one montage operation
+    -- produces one synchronization pass instead of a stream of undo points.
+    if auto_update_enabled and montage_sync_due and
+       cur_time >= montage_sync_due then
+        montage_sync_due = nil
+        synchronize_montage()
         invalidate_combined_cache()
         update()
     end
@@ -2912,6 +2856,7 @@ end
 load_settings()
 load_language_strings(lang)
 migrate_legacy_word_timing()
+montage_model.reconcile_project(subtitle_model)
 update()
 reaper.atexit(function()
     if custom_picker_undo_open then

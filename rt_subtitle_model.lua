@@ -1,7 +1,9 @@
 -- Shared subtitle data model for ReaTitles.
 --
--- P_NOTES is always the authoritative phrase text.
--- Word timing is auxiliary data used only by explicit split/repair operations.
+-- P_NOTES is the displayed phrase text and remains authoritative while the
+-- active source-word signature is unchanged. rt_montage_model.lua may rebuild
+-- it when an audio edit actually removes or separates spoken words.
+-- Word timing is auxiliary data used by split/repair/montage operations.
 -- New timing rows are relative to the subtitle item's left edge so moving an
 -- item (including REAPER Ripple Edit) never invalidates them.
 

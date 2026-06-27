@@ -25,9 +25,11 @@ ReaTitles is a subtitle, dialogue-editing and offline transcription toolkit for 
 - Subtitle import.
 - Offline faster-whisper transcription with live progress.
 - Smart Split action.
-- Ripple Edit and ordinary item movement preserve subtitle text exactly.
-- Word timing is stored relative to each subtitle item and is used only by
-  explicit Smart Split or one-time legacy recovery.
+- Native REAPER Split, trim, item deletion and Ripple Edit are reconciled
+  automatically while Prompter is running.
+- Whisper word timing is stored both relative to the displayed subtitle and in
+  source-media coordinates on managed audio. Source timing determines which
+  spoken words remain after montage edits.
 - Word `.docx` export/import for editor review.
 - Word round-trip supports text edits, paragraph reordering, deletions and colors.
 - Import creates `ПЕРЕНОС` and `УДАЛ` markers at changed joins.
@@ -70,9 +72,20 @@ Before the first import, work on a copy of the REAPER project and verify the res
 
 ## Subtitle data safety
 
-`P_NOTES` is the authoritative subtitle text. Prompter refresh, Ripple Edit,
-item movement and trimming never regenerate or overwrite it. Smart Split is the
-only editing action that divides phrase text from Whisper word timing.
+Audio is the montage authority. Each transcribed phrase receives a persistent
+`REATITLES_PHRASE_ID`, and its Whisper words are attached to the managed audio
+in source-media coordinates. Subtitle items are the visible projection of the
+audio that remains on the timeline.
+
+`P_NOTES` remains the displayed and manually editable phrase text. A manual
+correction is preserved while the active word set is unchanged. If spoken words
+are actually removed, ReaTitles rebuilds that phrase from the surviving words.
+Silence and breath fragments contain no words, are removed from the temporary
+phrase group, and never receive copied subtitle text.
+
+`I_GROUPID` is only a temporary REAPER editing convenience. Phrase identity no
+longer depends on it, so inherited group IDs from native Split are repaired
+automatically.
 
 When Prompter first opens an older project, legacy absolute word timing is
 migrated to movement-safe relative timing. Empty notes are restored only when
