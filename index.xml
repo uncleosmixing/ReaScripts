@@ -1,26 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <index version="1" name="ReaTitles">
-  <category name="Various">
-    <reapack name="ReaTitles - Prompter.lua" type="script" desc="Subtitle, dialogue editing, offline transcription and Word review toolkit">
+  <category name="ReaTitles">
+    <reapack name="ReaTitles - Core.lua" type="script" desc="Prompter, subtitle import and Word review round-trip">
       <metadata>
         <description><![CDATA[
-# ReaTitles
+# ReaTitles Core
 
-Prompter, subtitle import, offline faster-whisper transcription, phrase colors, magnetic editing and Word review round-trip.
+Prompter, subtitle import, phrase colors, magnetic editing and Word `.docx` review round-trip.
 
-Requires ReaImGui. See README.md for optional transcription dependencies.
+Requires ReaImGui.
         ]]></description>
       </metadata>
-      <version name="1.1.1" author="Chirick, ReaTitles contributors">
+      <version name="1.2.0" author="Chirick, ReaTitles contributors">
         <source main="main">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/ch_prompter.lua</source>
-        <source file="ch_import_text_items_from_sub.lua" main="main">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/ch_import_text_items_from_sub.lua</source>
-        <source file="rt_transcribe_audio.lua" main="main">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_transcribe_audio.lua</source>
-        <source file="rt_smart_split.lua" main="main">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_smart_split.lua</source>
-        <source file="ch_SubOverlay.lua">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/ch_SubOverlay.lua</source>
-        <source file="rt_whisper_transcribe.py">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_whisper_transcribe.py</source>
+        <source main="main" file="ch_import_text_items_from_sub.lua">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/ch_import_text_items_from_sub.lua</source>
+        <source main="main" file="rt_word_roundtrip.lua">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_word_roundtrip.lua</source>
         <source file="rt_word_bridge.ps1">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_word_bridge.ps1</source>
-        <source file="rt_word_roundtrip.lua">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_word_roundtrip.lua</source>
         <source file="README.md">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/README.md</source>
+      </version>
+    </reapack>
+
+    <reapack name="ReaTitles - Offline Transcription.lua" type="script" desc="Offline faster-whisper transcription with live progress">
+      <metadata>
+        <description><![CDATA[
+# ReaTitles Offline Transcription
+
+Transcribes selected audio locally and creates grouped subtitle items.
+
+Requires Python 3, faster-whisper, FFmpeg, a local Whisper model and ReaImGui for the progress window.
+        ]]></description>
+      </metadata>
+      <version name="1.2.0" author="ReaTitles contributors">
+        <source main="main">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_transcribe_audio.lua</source>
+        <source file="rt_whisper_transcribe.py">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_whisper_transcribe.py</source>
+      </version>
+    </reapack>
+
+    <reapack name="ReaTitles - Smart Split.lua" type="script" desc="Split phrase audio and subtitle text as one editing unit">
+      <metadata>
+        <description><![CDATA[
+# ReaTitles Smart Split
+
+Splits grouped phrase audio and subtitle items while preserving word timing metadata.
+        ]]></description>
+      </metadata>
+      <version name="1.2.0" author="ReaTitles contributors">
+        <source main="main">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/rt_smart_split.lua</source>
+      </version>
+    </reapack>
+
+    <reapack name="ReaTitles - SubOverlay.lua" type="script" desc="Subtitle overlay window">
+      <metadata>
+        <description><![CDATA[
+# ReaTitles SubOverlay
+
+Displays project subtitles in a dedicated overlay window.
+
+Requires ReaImGui.
+        ]]></description>
+      </metadata>
+      <version name="1.2.0" author="Chirick, ReaTitles contributors">
+        <source main="main">https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/ch_SubOverlay.lua</source>
       </version>
     </reapack>
   </category>

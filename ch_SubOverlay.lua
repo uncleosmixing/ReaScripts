@@ -1,6 +1,6 @@
 -- @description SubOverlay
 -- @author Chirick
--- @version 1.0.2
+-- @version 1.2.0
 -- @changelog
 --   + Deprecated function reaper.ULT_GetMediaItemNote() replaced with reaper.GetSetMediaItemInfo_String()
 -- @link https://github.com/chirick86/reaperscripts

@@ -10,8 +10,14 @@ ReaTitles is a subtitle, dialogue-editing and offline transcription toolkit for 
 
    `https://raw.githubusercontent.com/uncleosmixing/ReaTitles/main/index.xml`
 
-4. Synchronize packages, search for **ReaTitles**, install it, then restart REAPER.
-5. Run `ReaTitles - Prompter.lua` from the Action List.
+4. Synchronize packages and search for **ReaTitles**.
+5. Select and install all four ReaTitles packages:
+   - ReaTitles - Core
+   - ReaTitles - Offline Transcription
+   - ReaTitles - Smart Split
+   - ReaTitles - SubOverlay
+6. Restart REAPER.
+7. Run the installed ReaTitles actions from the Action List.
 
 ## Included tools
 

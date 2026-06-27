@@ -1,6 +1,6 @@
 -- @description Import text items from subtitles
 -- @author Chirick
--- @version 1.0.1
+-- @version 1.2.0
 -- @changelog
 --   + Added text scaling
 -- @link https://github.com/chirick86/reaperscripts
