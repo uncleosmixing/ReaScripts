@@ -177,8 +177,11 @@ function M.snap_word_to_onset(take, w_start, prev_end_time)
     take, peakrate, search_start, numchannels, numsamples, want_extra_type, peaks
   )
   
+  if retval <= 0 then return w_start end
   local actual_samples = retval % 1048576
-  if actual_samples <= 0 then return w_start end
+  if actual_samples > numsamples then
+    actual_samples = numsamples
+  end
   
   local max_vals = {}
   local global_max = 0
