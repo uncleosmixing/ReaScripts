@@ -447,7 +447,7 @@ local function main()
     model_param = local_model_dir
   end
 
-  local cmd = string.format('%s "%s%s" --items "%s" --output "%s" --model "%s"',
+  local cmd = string.format('%s "%s%s" --items "%s" --output "%s" --model "%s" --backend auto',
     python, script_dir, PYTHON_SCRIPT,
     items_path:gsub("\\","/"), output_path:gsub("\\","/"), model_param)
   cmd = cmd .. string.format(' --status "%s"', status_path:gsub("\\","/"))
