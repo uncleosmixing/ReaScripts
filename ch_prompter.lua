@@ -2483,26 +2483,12 @@ local function draw_list()
 
     -- Handle mouse release AFTER the loop
     if drag_source_idx and reaper.ImGui_IsMouseReleased(ctx, 0) then
-        if drag_offset_y and drag_drop_idx and drag_drop_idx ~= drag_source_idx then
-            -- Was a drag: reorder items
-            local moved = reorder_item(drag_source_idx, drag_drop_idx)
-            if moved then
-                invalidate_combined_cache()
-                update()
-            else
-                reaper.ShowMessageBox(
-                    "The phrase was not moved. Select a subtitle track source " ..
-                    "(not Regions/All Items) and try again.",
-                    TITLE, 0)
-            end
-        elseif not drag_offset_y and drag_source_idx then
-            -- Was a click: select item + jump
-            local item = display_data[drag_source_idx]
-            if item then
-                if item.item_ptr then select_item_pair(item.item_ptr) end
-                reaper.SetEditCurPos(item.start_time or 0, true, true)
-                reaper.ImGui_SetClipboardText(ctx, string.format("%s - %s", item.start_str or "", item.name or ""))
-            end
+        -- Click: select item + jump to position
+        local item = display_data[drag_source_idx]
+        if item then
+            if item.item_ptr then select_item_pair(item.item_ptr) end
+            reaper.SetEditCurPos(item.start_time or 0, true, true)
+            reaper.ImGui_SetClipboardText(ctx, string.format("%s - %s", item.start_str or "", item.name or ""))
         end
         drag_source_idx = nil
         drag_drop_idx = nil
@@ -2864,7 +2850,6 @@ local function loop()
         drag_drop_idx = nil
         drag_offset_y = nil
         drag_start_y = nil
-        sync_subtitles_to_audio()
         invalidate_combined_cache()
         update()
     end
