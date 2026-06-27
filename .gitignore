@@ -10,3 +10,4 @@ rt_setup_status.txt
 *.rpp-bak
 __pycache__/
 *.pyc
+models/

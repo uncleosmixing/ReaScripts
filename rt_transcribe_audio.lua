@@ -345,10 +345,10 @@ local function main()
   local f_test = io.open(local_model_dir .. "/model.bin", "r")
   if f_test then
     f_test:close()
-    model_param = local_model_dir:gsub("\\", "/")
+    model_param = local_model_dir
   end
 
-  local cmd = string.format('%s "%s%s" --items "%s" --output "%s" --model %s',
+  local cmd = string.format('%s "%s%s" --items "%s" --output "%s" --model "%s"',
     python, script_dir, PYTHON_SCRIPT,
     items_path:gsub("\\","/"), output_path:gsub("\\","/"), model_param)
   cmd = cmd .. string.format(' --status "%s"', status_path:gsub("\\","/"))
