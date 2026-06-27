@@ -744,9 +744,17 @@ function M.rebuild_take_markers(audio_item, subtitle_model)
   for i = num_markers - 1, 0, -1 do
     r.DeleteTakeMarker(take, i)
   end
+  local snapped_words = {}
+  local prev_end = 0
   for _, word in ipairs(words) do
-    r.SetTakeMarker(take, -1, word[3], word[1], 0)
+    local snapped = subtitle_model and subtitle_model.snap_word_to_onset(take, word[1], prev_end) or word[1]
+    r.SetTakeMarker(take, -1, word[3], snapped, 0)
+    local w_end = word[2]
+    if w_end < snapped then w_end = snapped + 0.1 end
+    table.insert(snapped_words, { snapped, w_end, word[3] })
+    prev_end = snapped
   end
+  set_string(audio_item, M.SOURCE_WORDS_KEY, M.serialize_source_words(snapped_words))
   return true
 end
 

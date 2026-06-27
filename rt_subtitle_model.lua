@@ -150,18 +150,93 @@ function M.text_for_range(words, range_start, range_end)
     M.words_for_range(words, range_start, range_end, 0))
 end
 
-function M.set_audio_words(take, words)
-  -- Store in take extension state
-  M.set_take_string(take, M.AUDIO_WORDS_KEY, M.serialize_words(words))
+function M.snap_word_to_onset(take, w_start, prev_end_time)
+  local search_start = w_start - 0.08
+  if not prev_end_time or prev_end_time == 0 then
+    search_start = w_start - 0.30
+  else
+    if search_start < prev_end_time then
+      search_start = prev_end_time
+    end
+  end
+  if search_start < 0 then search_start = 0 end
   
-  -- Rebuild take markers
+  local search_end = w_start + 0.12
+  local duration = search_end - search_start
+  if duration <= 0.005 then return w_start end
+  
+  local peakrate = 250 -- 4ms resolution
+  local numsamples = math.floor(duration * peakrate)
+  if numsamples < 5 then return w_start end
+  
+  local numchannels = 1
+  local want_extra_type = 0
+  local peaks = reaper.array(numchannels * numsamples * 2)
+  
+  local retval = reaper.GetMediaItemTake_Peaks(
+    take, peakrate, search_start, numchannels, numsamples, want_extra_type, peaks
+  )
+  
+  if retval <= 0 then return w_start end
+  
+  local max_vals = {}
+  local global_max = 0
+  local global_min = 1
+  for idx = 1, numsamples do
+    local val = math.abs(peaks[idx] or 0)
+    max_vals[idx] = val
+    if val > global_max then global_max = val end
+    if val < global_min then global_min = val end
+  end
+  
+  if global_max < 0.005 then
+    return w_start
+  end
+  
+  local threshold = global_min + 0.12 * (global_max - global_min)
+  threshold = math.max(threshold, 0.008)
+  
+  local onset_idx = nil
+  for idx = 1, numsamples - 1 do
+    if max_vals[idx] >= threshold and max_vals[idx + 1] >= threshold then
+      onset_idx = idx
+      break
+    end
+  end
+  
+  if onset_idx then
+    local onset_time = search_start + (onset_idx - 1) / peakrate
+    if math.abs(onset_time - w_start) < 0.25 then
+      return onset_time
+    end
+  end
+  
+  return w_start
+end
+
+function M.set_audio_words(take, words)
+  -- Rebuild take markers and snap times
   local num_markers = reaper.GetNumTakeMarkers(take)
   for i = num_markers - 1, 0, -1 do
     reaper.DeleteTakeMarker(take, i)
   end
+  
+  local snapped_words = {}
+  local prev_end = 0
   for _, word in ipairs(words) do
-    reaper.SetTakeMarker(take, -1, word[3], word[1], 0)
+    local start_time = word[1]
+    local snapped = M.snap_word_to_onset(take, start_time, prev_end)
+    reaper.SetTakeMarker(take, -1, word[3], snapped, 0)
+    
+    local w_end = word[2]
+    if w_end < snapped then w_end = snapped + 0.1 end
+    table.insert(snapped_words, { snapped, w_end, word[3] })
+    
+    prev_end = snapped
   end
+  
+  -- Store snapped in take extension state
+  M.set_take_string(take, M.AUDIO_WORDS_KEY, M.serialize_words(snapped_words))
 end
 
 function M.get_audio_words(take)

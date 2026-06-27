@@ -208,96 +208,6 @@ def create_model(model_size="small", progress=None):
     return model
 
 
-def align_words_to_onsets(wav_path, words):
-    """
-    Adjust word start times by snapping them to local audio energy onsets.
-    """
-    try:
-        import wave
-        import numpy as np
-        
-        with wave.open(wav_path, "rb") as wf:
-            n_channels = wf.getnchannels()
-            sampwidth = wf.getsampwidth()
-            framerate = wf.getframerate()
-            n_frames = wf.getnframes()
-            if framerate != 16000 or n_channels != 1 or sampwidth != 2:
-                return words
-            
-            raw_data = wf.readframes(n_frames)
-            samples = np.frombuffer(raw_data, dtype=np.int16).astype(np.float32) / 32768.0
-            
-        win_size = 80  # 5ms window at 16kHz
-        hop_size = 40  # 2.5ms step
-        n_blocks = (len(samples) - win_size) // hop_size + 1
-        if n_blocks <= 0:
-            return words
-            
-        rms = np.zeros(n_blocks, dtype=np.float32)
-        for b in range(n_blocks):
-            start_idx = b * hop_size
-            block = samples[start_idx : start_idx + win_size]
-            rms[b] = np.sqrt(np.mean(block ** 2))
-            
-        max_rms = np.max(rms)
-        if max_rms < 0.005:
-            return words
-            
-        aligned_words = []
-        for wi, word in enumerate(words):
-            w_start, w_end, text = word
-            
-            # Define search window in seconds to prevent overlapping previous speech
-            if wi == 0:
-                search_start_sec = max(0.0, w_start - 0.300)
-            else:
-                prev_end = aligned_words[wi-1][1]
-                search_start_sec = max(prev_end - 0.020, w_start - 0.080)
-                
-            search_end_sec = w_start + 0.120
-            
-            search_start = int((search_start_sec * 16000 - win_size/2) / hop_size)
-            search_start = max(0, min(n_blocks - 1, search_start))
-            
-            search_end = int((search_end_sec * 16000 - win_size/2) / hop_size)
-            search_end = max(0, min(n_blocks - 1, search_end))
-            
-            if search_end >= search_start:
-                local_rms = rms[search_start : search_end + 1]
-                local_min = np.min(local_rms)
-                local_max = np.max(local_rms)
-                
-                # Threshold: 12% above dynamic floor
-                threshold = local_min + 0.12 * (local_max - local_min)
-                threshold = max(threshold, 0.008)  # absolute noise floor
-                
-                onset_idx = None
-                for b in range(search_start, search_end + 1):
-                    if rms[b] >= threshold:
-                        if b + 1 < n_blocks and rms[b+1] >= threshold:
-                            onset_idx = b
-                            break
-                
-                if onset_idx is not None:
-                    new_start = (onset_idx * hop_size + win_size / 2) / 16000.0
-                    if abs(new_start - w_start) < 0.250:
-                        w_start = round(new_start, 3)
-            
-            # Enforce sequential order
-            if wi > 0:
-                prev_start = aligned_words[wi-1][0]
-                if w_start < prev_start + 0.030:
-                    w_start = prev_start + 0.030
-                    
-            aligned_words.append([w_start, w_end, text])
-            
-        return aligned_words
-    except Exception as e:
-        import sys
-        print(f"[Onset Alignment] Error: {e}", file=sys.stderr)
-        return words
-
-
 def transcribe_file(model, filepath, language="ru", duration=0, progress=None):
     print(f"[Whisper] Transcribing {os.path.basename(filepath)}...", file=sys.stderr)
     t0 = time.time()
@@ -327,7 +237,6 @@ def transcribe_file(model, filepath, language="ru", duration=0, progress=None):
                         round(word.end, 3),
                         word.word,
                     ])
-            words = align_words_to_onsets(filepath, words)
             result.append([round(seg.start, 3), round(seg.end, 3), text, words])
             print(f"[Whisper] {seg.start:.2f}-{seg.end:.2f}: {text}", file=sys.stderr)
         if progress:
