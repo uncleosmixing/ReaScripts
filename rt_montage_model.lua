@@ -236,7 +236,7 @@ function M.register_transcribed_phrase(audio_item, subtitle_item, whisper_words,
   
   local take = r.GetActiveTake(audio_item)
   if take then
-    local num_markers = r.CountTakeMarkers(take)
+    local num_markers = r.GetNumTakeMarkers(take)
     for i = num_markers - 1, 0, -1 do
       r.DeleteTakeMarker(take, i)
     end
@@ -682,7 +682,7 @@ function M.rebuild_take_markers(audio_item)
   if words_str == "" then return false end
   local words = M.parse_source_words(words_str)
   
-  local num_markers = r.CountTakeMarkers(take)
+  local num_markers = r.GetNumTakeMarkers(take)
   for i = num_markers - 1, 0, -1 do
     r.DeleteTakeMarker(take, i)
   end

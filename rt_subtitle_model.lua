@@ -146,7 +146,7 @@ function M.set_audio_words(take, words)
   M.set_string(take, M.AUDIO_WORDS_KEY, M.serialize_words(words))
   
   -- Rebuild take markers
-  local num_markers = reaper.CountTakeMarkers(take)
+  local num_markers = reaper.GetNumTakeMarkers(take)
   for i = num_markers - 1, 0, -1 do
     reaper.DeleteTakeMarker(take, i)
   end
