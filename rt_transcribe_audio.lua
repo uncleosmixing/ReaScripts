@@ -1,5 +1,5 @@
 -- @description Transcribe audio items to subtitle text items (Whisper)
--- @version 1.8.3
+-- @version 1.8.4
 -- @author ReaTitles
 -- @changelog + Initial release
 -- @about
@@ -9,6 +9,7 @@
 --   Requires: Python 3.8+, faster-whisper, FFmpeg.
 
 local PYTHON_SCRIPT = "rt_whisper_transcribe.py"
+local WHISPER_MODEL = "small"
 local SUBTITLE_TRACK_NAME = "Subtitles"
 local r = reaper
 
@@ -466,8 +467,8 @@ local function main()
   os.remove(progress_path .. ".tmp")
   os.remove(log_path)
   os.remove(script_dir .. "rt_sync.log")
-  local model_param = "large-v3"
-  local local_model_dir = script_dir .. "models/large-v3"
+  local model_param = WHISPER_MODEL
+  local local_model_dir = script_dir .. "models/" .. WHISPER_MODEL
   local f_test = io.open(local_model_dir .. "/model.bin", "r")
   if f_test then
     f_test:close()
