@@ -26,6 +26,15 @@ function M.set_string(item, key, value)
   reaper.GetSetMediaItemInfo_String(item, key, value or "", true)
 end
 
+function M.get_take_string(take, key)
+  local _, value = reaper.GetSetMediaItemTakeInfo_String(take, key, "", false)
+  return value or ""
+end
+
+function M.set_take_string(take, key, value)
+  reaper.GetSetMediaItemTakeInfo_String(take, key, value or "", true)
+end
+
 function M.parse_words(metadata)
   local words = {}
   for row in (metadata or ""):gmatch("[^\r\n]+") do
@@ -143,7 +152,7 @@ end
 
 function M.set_audio_words(take, words)
   -- Store in take extension state
-  M.set_string(take, M.AUDIO_WORDS_KEY, M.serialize_words(words))
+  M.set_take_string(take, M.AUDIO_WORDS_KEY, M.serialize_words(words))
   
   -- Rebuild take markers
   local num_markers = reaper.GetNumTakeMarkers(take)
@@ -156,7 +165,7 @@ function M.set_audio_words(take, words)
 end
 
 function M.get_audio_words(take)
-  local data = M.get_string(take, M.AUDIO_WORDS_KEY)
+  local data = M.get_take_string(take, M.AUDIO_WORDS_KEY)
   if data == "" then return {} end
   return M.parse_words(data)
 end
