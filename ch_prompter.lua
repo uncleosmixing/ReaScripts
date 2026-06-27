@@ -1,6 +1,6 @@
 -- @description Prompter
 -- @author Chirick, ReaTitles contributors
--- @version 1.4.7
+-- @version 1.4.8
 -- @changelog
 --   + Magnetic phrase editing, offline transcription and Word review round-trip
 -- @link https://github.com/uncleosmixing/ReaTitles
@@ -819,10 +819,10 @@ local function collect_text_items()
             local it = reaper.GetTrackMediaItem(track, i)
             local pos = reaper.GetMediaItemInfo_Value(it, "D_POSITION")
             local len = reaper.GetMediaItemInfo_Value(it, "D_LENGTH")
-            local _, notes = reaper.GetSetMediaItemInfo_String(it, "P_NOTES", "", false)
+            local notes = subtitle_model.get_string(it, "P_NOTES")
             local is_managed_audio = false
             if notes == "" then
-                if reaper.GetSetMediaItemInfo_String(it, "P_EXT:REATITLES_MANAGED_AUDIO", "", false) == "1" then
+                if subtitle_model.get_string(it, "P_EXT:REATITLES_MANAGED_AUDIO") == "1" then
                     is_managed_audio = true
                     local take = reaper.GetActiveTake(it)
                     if take then
@@ -850,7 +850,7 @@ local function collect_text_items()
                     end
                 end
             else
-                if reaper.GetSetMediaItemInfo_String(it, "P_EXT:REATITLES_MANAGED_AUDIO", "", false) == "1" then
+                if subtitle_model.get_string(it, "P_EXT:REATITLES_MANAGED_AUDIO") == "1" then
                     is_managed_audio = true
                 end
             end
@@ -2427,6 +2427,56 @@ local function draw_list()
                 draw_search_highlight(line, search, text_col_w)
             else
                 reaper.ImGui_Text(ctx, line)
+            end
+
+            if r.type == "audio_item" and (is_current or (editing_idx == nil and selected_idx == i)) then
+                local take = reaper.GetActiveTake(r.item_ptr)
+                if take then
+                    local words = subtitle_model.get_audio_words(take)
+                    if #words > 0 then
+                        local start_offs = reaper.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS")
+                        local playrate = reaper.GetMediaItemTakeInfo_Value(take, "D_PLAYRATE")
+                        if playrate <= 0 then playrate = 1 end
+                        local item_pos = reaper.GetMediaItemInfo_Value(r.item_ptr, "D_POSITION")
+                        local item_len = reaper.GetMediaItemInfo_Value(r.item_ptr, "D_LENGTH")
+                        local end_offs = start_offs + item_len * playrate
+                        local active_words = {}
+                        for _, w in ipairs(words) do
+                            local w_mid = (w[1] + w[2]) * 0.5
+                            if w_mid >= start_offs - 0.005 and w_mid < end_offs + 0.005 then
+                                table.insert(active_words, w)
+                            end
+                        end
+                        if #active_words > 0 then
+                            reaper.ImGui_SetCursorPosX(ctx, ui_dimensions.time_width + ui_dimensions.space_width)
+                            reaper.ImGui_PushStyleVar(ctx, reaper.ImGui_StyleVar_ItemSpacing(), 4, 3)
+                            reaper.ImGui_TextColored(ctx, 0x888888FF, "↳")
+                            reaper.ImGui_SameLine(ctx)
+                            for wi, w in ipairs(active_words) do
+                                reaper.ImGui_PushID(ctx, "word_" .. i .. "_" .. wi)
+                                local wl_pos = item_pos + (w[1] - start_offs) / playrate
+                                local cur_pos = reaper.GetCursorPosition()
+                                local is_cur_word = math.abs(cur_pos - wl_pos) < 0.15
+                                if is_cur_word then
+                                    reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_Button(), 0x8A4F2FFF)
+                                    reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_ButtonHovered(), 0xAA6F3FFF)
+                                else
+                                    reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_Button(), 0x1A2A3AFF)
+                                    reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_ButtonHovered(), 0x2A3A4AFF)
+                                end
+                                if reaper.ImGui_Button(ctx, w[3]) then
+                                    reaper.SetEditCurPos(wl_pos, true, false)
+                                end
+                                reaper.ImGui_PopStyleColor(ctx, 2)
+                                reaper.ImGui_PopID(ctx)
+                                if wi < #active_words then
+                                    reaper.ImGui_SameLine(ctx)
+                                end
+                            end
+                            reaper.ImGui_PopStyleVar(ctx)
+                        end
+                    end
+                end
             end
         end
 

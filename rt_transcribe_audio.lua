@@ -1,5 +1,5 @@
 -- @description Transcribe audio items to subtitle text items (Whisper)
--- @version 1.4.7
+-- @version 1.4.8
 -- @author ReaTitles
 -- @changelog + Initial release
 -- @about
@@ -275,8 +275,8 @@ local function store_audio_word_timing(audio_item, words, item_pos, rate, source
   for _, word in ipairs(words) do
     if type(word) == "table" and tonumber(word[1]) and tonumber(word[2]) and
        type(word[3]) == "string" then
-      local start_src = source_offset + tonumber(word[1]) / rate
-      local end_src = source_offset + tonumber(word[2]) / rate
+      local start_src = math.max(0, source_offset) + tonumber(word[1])
+      local end_src = math.max(0, source_offset) + tonumber(word[2])
       local text = word[3]:gsub("[\r\n\t]", " ")
       source_words[#source_words + 1] = {
         start_src,
