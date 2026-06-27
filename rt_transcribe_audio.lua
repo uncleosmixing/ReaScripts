@@ -1,5 +1,5 @@
 -- @description Transcribe audio items to subtitle text items (Whisper)
--- @version 1.2.2
+-- @version 1.2.3
 -- @author ReaTitles
 -- @changelog + Initial release
 -- @about
@@ -34,9 +34,16 @@ local function find_python()
   return nil
 end
 
-local function ensure_faster_whisper(python, script_dir)
-  local check = os.execute(python .. ' -c "import faster_whisper"')
-  if check == true or check == 0 then return true end
+local function ensure_dependencies(python, script_dir)
+  local whisper_check = os.execute(python .. ' -c "import faster_whisper"')
+  local ffmpeg_check = os.execute(
+    python .. ' -c "import glob,os,shutil,sys; ' ..
+    "root=os.path.join(os.environ.get('LOCALAPPDATA',''),'Microsoft','WinGet','Packages'); " ..
+    "found=shutil.which('ffmpeg') or glob.glob(os.path.join(root,'Gyan.FFmpeg*','**','ffmpeg.exe'),recursive=True); " ..
+    'sys.exit(0 if found else 1)"')
+  local whisper_ok = whisper_check == true or whisper_check == 0
+  local ffmpeg_ok = ffmpeg_check == true or ffmpeg_check == 0
+  if whisper_ok and ffmpeg_ok then return true end
 
   local installer = script_dir .. "rt_install_dependencies.py"
   if not r.file_exists(installer) then
@@ -59,7 +66,9 @@ local function ensure_faster_whisper(python, script_dir)
     return false
   end
 
-  msg("[ReaTitles SETUP] Installing faster-whisper in the background.")
+  msg("[ReaTitles SETUP] Installing missing transcription dependencies in the background.")
+  if not whisper_ok then msg("[ReaTitles SETUP] Missing: faster-whisper") end
+  if not ffmpeg_ok then msg("[ReaTitles SETUP] Missing: FFmpeg") end
   msg("[ReaTitles SETUP] REAPER remains available. Run transcription again after success.")
   local started = r.time_precise()
   local shown_bytes = 0
@@ -83,9 +92,9 @@ local function ensure_faster_whisper(python, script_dir)
       status:close()
       os.remove(status_path)
       if code == 0 then
-        msg("[ReaTitles SETUP] faster-whisper installed successfully.")
+        msg("[ReaTitles SETUP] Transcription dependencies installed successfully.")
         r.ShowMessageBox(
-          "faster-whisper installed successfully.\n\nRun transcription again.",
+          "Transcription dependencies installed successfully.\n\nRun transcription again.",
           "ReaTitles setup", 0)
       else
         msg("[ReaTitles ERROR] Dependency installation failed. See rt_setup.log.")
@@ -103,7 +112,7 @@ local function ensure_faster_whisper(python, script_dir)
         r.ImGui_WindowFlags_AlwaysAutoResize())
       if visible then
         local elapsed = math.floor(r.time_precise() - started)
-        r.ImGui_Text(setup_ctx, "Installing faster-whisper in the background...")
+        r.ImGui_Text(setup_ctx, "Installing transcription dependencies...")
         r.ImGui_Text(setup_ctx, string.format("Elapsed: %02d:%02d",
           math.floor(elapsed / 60), elapsed % 60))
         r.ImGui_TextWrapped(setup_ctx,
@@ -264,7 +273,7 @@ local function main()
 
   local script_dir = get_script_dir()
 
-  if not ensure_faster_whisper(python, script_dir) then return end
+  if not ensure_dependencies(python, script_dir) then return end
 
   -- Collect items
   local items_json = {}
