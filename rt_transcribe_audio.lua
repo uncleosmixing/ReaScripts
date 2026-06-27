@@ -1,5 +1,5 @@
 -- @description Transcribe audio items to subtitle text items (Whisper)
--- @version 1.2.3
+-- @version 1.2.4
 -- @author ReaTitles
 -- @changelog + Initial release
 -- @about
@@ -10,6 +10,7 @@
 
 local PYTHON_SCRIPT = "rt_whisper_transcribe.py"
 local SUBTITLE_TRACK_NAME = "Subtitles"
+local SCRIPT_VERSION = "1.2.4"
 local r = reaper
 
 local function msg(s) r.ShowConsoleMsg(tostring(s) .. "\n") end
@@ -330,7 +331,7 @@ local function main()
     items_path:gsub("\\","/"), output_path:gsub("\\","/"))
   cmd = cmd .. string.format(' --status "%s"', status_path:gsub("\\","/"))
   cmd = cmd .. string.format(' --progress "%s"', progress_path:gsub("\\","/"))
-  msg("[ReaTitles] " .. cmd)
+  msg("[ReaTitles " .. SCRIPT_VERSION .. "] " .. cmd)
 
   local is_windows = r.GetOS():match("Win") ~= nil
   local launch_cmd

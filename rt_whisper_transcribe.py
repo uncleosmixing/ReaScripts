@@ -79,6 +79,37 @@ def find_ffmpeg():
     return None
 
 
+def install_ffmpeg():
+    """Install FFmpeg on Windows without blocking REAPER's main process."""
+    if sys.platform != "win32" or not shutil.which("winget"):
+        print("[Setup] Cannot auto-install FFmpeg: WinGet is unavailable.",
+              file=sys.stderr)
+        return False
+    print("[Setup] FFmpeg is missing. Installing Gyan.FFmpeg through WinGet...",
+          file=sys.stderr)
+    command = [
+        "winget", "install", "--id", "Gyan.FFmpeg", "-e",
+        "--accept-package-agreements", "--accept-source-agreements", "--silent",
+    ]
+    try:
+        process = subprocess.run(
+            command,
+            stdout=sys.stderr,
+            stderr=sys.stderr,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        if process.returncode != 0:
+            print(f"[Setup] WinGet failed with exit code {process.returncode}.",
+                  file=sys.stderr)
+            return False
+    except Exception as error:
+        print(f"[Setup] Could not start WinGet: {error}", file=sys.stderr)
+        return False
+    return find_ffmpeg() is not None
+
+
 def find_cached_model(model_size):
     """Return a complete local faster-whisper snapshot without network access."""
     repo_dir = f"models--Systran--faster-whisper-{model_size}"
@@ -239,8 +270,18 @@ def main():
 
     ffmpeg = find_ffmpeg()
     if not ffmpeg:
-        print("[ERROR] FFmpeg not found! Install: winget install Gyan.FFmpeg", file=sys.stderr)
-        sys.exit(1)
+        emit_progress(
+            phase="setup",
+            detail="Installing FFmpeg through WinGet",
+            text="")
+        if install_ffmpeg():
+            ffmpeg = find_ffmpeg()
+    if not ffmpeg:
+        print("[ERROR] FFmpeg not found and automatic installation failed.",
+              file=sys.stderr)
+        raise RuntimeError(
+            "FFmpeg is missing. Automatic WinGet installation failed; "
+            "see the transcription log.")
     print(f"[Setup] FFmpeg: {ffmpeg}", file=sys.stderr)
     print(f"[Setup] CPU threads: {CPU_COUNT}", file=sys.stderr)
 
