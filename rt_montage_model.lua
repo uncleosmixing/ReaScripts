@@ -241,7 +241,7 @@ function M.register_transcribed_phrase(audio_item, subtitle_item, whisper_words,
       r.DeleteTakeMarker(take, i)
     end
     for _, word in ipairs(words) do
-      r.AddTakeMarker(take, word[1], word[3])
+      r.SetTakeMarker(take, -1, word[3], word[1], 0)
     end
   end
   set_string(subtitle_item, M.PHRASE_ID_KEY, phrase_id)
@@ -745,7 +745,7 @@ function M.rebuild_take_markers(audio_item, subtitle_model)
     r.DeleteTakeMarker(take, i)
   end
   for _, word in ipairs(words) do
-    r.AddTakeMarker(take, word[1], word[3])
+    r.SetTakeMarker(take, -1, word[3], word[1], 0)
   end
   return true
 end

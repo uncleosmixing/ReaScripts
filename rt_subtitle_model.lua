@@ -160,7 +160,7 @@ function M.set_audio_words(take, words)
     reaper.DeleteTakeMarker(take, i)
   end
   for _, word in ipairs(words) do
-    reaper.AddTakeMarker(take, word[1], word[3])
+    reaper.SetTakeMarker(take, -1, word[3], word[1], 0)
   end
 end
 
