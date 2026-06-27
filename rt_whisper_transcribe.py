@@ -87,9 +87,7 @@ def find_cached_model(model_size):
     return None
 
 
-# ── WhisperX backend ─────────────────────────────────────────────────────────
-
-def transcribe_whisperx(wav_path, model_size, language, duration, emit_progress):
+# ── WhisperX backend ────────────────�def transcribe_whisperx(wav_path, model_size, language, duration, emit_progress):
     import whisperx
 
     device = "cpu"
@@ -99,17 +97,22 @@ def transcribe_whisperx(wav_path, model_size, language, duration, emit_progress)
     cached = find_cached_model(model_size)
     if cached:
         model_source = cached
+        local_only = True
         print(f"[WhisperX] Using cached model: {cached}", file=sys.stderr)
     else:
         os.environ["HF_HUB_OFFLINE"] = "0"
         os.environ["TRANSFORMERS_OFFLINE"] = "0"
         model_source = model_size
+        local_only = False
         print(f"[WhisperX] Downloading model: {model_size}", file=sys.stderr)
 
     t0 = time.time()
     model = whisperx.load_model(
-        model_source, device, compute_type=compute_type,
+        model_source, device,
+        compute_type=compute_type,
         language=language,
+        # Use silero VAD - no HuggingFace token required
+        vad_method="silero",
         asr_options={
             "temperatures": [0.0],
             "beam_size": 5,
@@ -120,40 +123,63 @@ def transcribe_whisperx(wav_path, model_size, language, duration, emit_progress)
             "without_timestamps": False,
             "max_initial_timestamp": 1.0,
             "word_timestamps": True,
-        })
+        },
+        local_files_only=local_only,
+        threads=CPU_COUNT,
+    )
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
     print(f"[WhisperX] Whisper loaded in {time.time()-t0:.1f}s", file=sys.stderr)
     emit_progress(phase="model_ready", detail="Whisper ready, loading audio")
 
-    # Step 1: Transcribe
-    audio = whisperx.load_audio(wav_path)
+    # Step 1: Transcribe - load audio as numpy array (avoids torchcodec issue)
+    import numpy as np
+    import soundfile as sf
+    try:
+        audio_np, sr = sf.read(wav_path, dtype="float32", always_2d=False)
+        if sr != 16000:
+            import resampy
+            audio_np = resampy.resample(audio_np, sr, 16000)
+        audio = audio_np
+    except Exception:
+        # Fallback to whisperx native loader
+        audio = whisperx.load_audio(wav_path)
+
     emit_progress(phase="transcribing", detail="Recognizing speech (Whisper)")
     t0 = time.time()
-    result = model.transcribe(audio, batch_size=8, language=language)
+    result = model.transcribe(audio, batch_size=4, language=language)
     print(f"[WhisperX] Transcription done in {time.time()-t0:.1f}s", file=sys.stderr)
 
     if not result.get("segments"):
         print("[WhisperX] No segments found.", file=sys.stderr)
         return []
 
-    # Step 2: Forced alignment with wav2vec2 / MMS
-    emit_progress(phase="aligning", detail="Forced alignment (wav2vec2)")
+    detected_lang = result.get("language", language)
+    print(f"[WhisperX] Detected language: {detected_lang}", file=sys.stderr)
+
+    # Step 2: Forced alignment with wav2vec2
+    emit_progress(phase="aligning", detail="Forced alignment (wav2vec2) - first run downloads ~300MB")
     os.environ["HF_HUB_OFFLINE"] = "0"
     os.environ["TRANSFORMERS_OFFLINE"] = "0"
     t0 = time.time()
+    aligned = False
     try:
         align_model, metadata = whisperx.load_align_model(
-            language_code=result["language"], device=device)
+            language_code=detected_lang, device=device)
         result = whisperx.align(
             result["segments"], align_model, metadata, audio, device,
             return_char_alignments=False)
+        aligned = True
         print(f"[WhisperX] Alignment done in {time.time()-t0:.1f}s", file=sys.stderr)
+        del align_model  # free memory
     except Exception as e:
-        print(f"[WhisperX] Alignment failed: {e} - using Whisper timestamps", file=sys.stderr)
+        print(f"[WhisperX] Alignment failed ({type(e).__name__}: {e}) - using Whisper timestamps",
+              file=sys.stderr)
     finally:
         os.environ["HF_HUB_OFFLINE"] = "1"
         os.environ["TRANSFORMERS_OFFLINE"] = "1"
+
+    emit_progress(phase="aligning", detail=f"Alignment {'OK' if aligned else 'skipped (fallback)'}")
 
     # Build output
     result_data = []
@@ -175,6 +201,9 @@ def transcribe_whisperx(wav_path, model_size, language, duration, emit_progress)
             words
         ])
         print(f"[WhisperX] {seg.get('start', 0):.2f}-{seg.get('end', 0):.2f}: {text}",
+              file=sys.stderr)
+    return result_data
+WhisperX] {seg.get('start', 0):.2f}-{seg.get('end', 0):.2f}: {text}",
               file=sys.stderr)
     return result_data
 
