@@ -1,6 +1,6 @@
 -- @description Prompter
 -- @author Chirick, ReaTitles contributors
--- @version 1.7.1
+-- @version 1.8.6
 -- @changelog
 --   + Magnetic phrase editing, offline transcription and Word review round-trip
 -- @link https://github.com/uncleosmixing/ReaScripts
@@ -2049,8 +2049,15 @@ local function topmenu()
     end
 
     reaper.ImGui_SameLine(ctx, 0, 10)
-    if reaper.ImGui_Button(ctx, "⚑ Words") then
-        rebuild_markers_for_selected()
+    local markers_visible = subtitle_model.take_markers_visible()
+    local marker_button = markers_visible and "Words: ON" or "Words: OFF"
+    if reaper.ImGui_Button(ctx, marker_button) then
+        reaper.Undo_BeginBlock()
+        montage_model.set_take_markers_visible(
+            not markers_visible, subtitle_model)
+        reaper.Undo_EndBlock(
+            markers_visible and "ReaTitles: Hide take markers"
+                            or "ReaTitles: Show take markers", -1)
     end
 
     reaper.ImGui_SameLine(ctx, 0, 10)

@@ -25,6 +25,10 @@ M.ACTIVE_COVERAGE = 0.65
 M.REVIEW_COVERAGE = 0.35
 M.EPSILON = 0.000001
 
+local function take_markers_visible()
+  return r.GetExtState("ReaTitles", "take_markers_visible") ~= "0"
+end
+
 local function get_string(item, key)
   local _, value = r.GetSetMediaItemInfo_String(item, key, "", false)
   return value or ""
@@ -235,7 +239,7 @@ function M.register_transcribed_phrase(audio_item, subtitle_item, whisper_words,
   set_string(audio_item, M.SOURCE_WORDS_KEY, M.serialize_source_words(words))
   
   local take = r.GetActiveTake(audio_item)
-  if take then
+  if take and take_markers_visible() then
     local num_markers = r.GetNumTakeMarkers(take)
     for i = num_markers - 1, 0, -1 do
       r.DeleteTakeMarker(take, i)
@@ -740,15 +744,21 @@ function M.rebuild_take_markers(audio_item, subtitle_model)
   
   if #words == 0 then return false end
   
-  local num_markers = r.GetNumTakeMarkers(take)
-  for i = num_markers - 1, 0, -1 do
-    r.DeleteTakeMarker(take, i)
+  local markers_visible = not subtitle_model or
+    subtitle_model.take_markers_visible()
+  if markers_visible then
+    local num_markers = r.GetNumTakeMarkers(take)
+    for i = num_markers - 1, 0, -1 do
+      r.DeleteTakeMarker(take, i)
+    end
   end
   local snapped_words = {}
   local prev_end = 0
   for _, word in ipairs(words) do
     local snapped = subtitle_model and subtitle_model.snap_word_to_onset(take, word[1], prev_end) or word[1]
-    r.SetTakeMarker(take, -1, word[3], snapped, 0)
+    if markers_visible then
+      r.SetTakeMarker(take, -1, word[3], snapped, 0)
+    end
     local w_end = word[2]
     if w_end < snapped then w_end = snapped + 0.1 end
     table.insert(snapped_words, { snapped, w_end, word[3] })
@@ -756,6 +766,36 @@ function M.rebuild_take_markers(audio_item, subtitle_model)
   end
   set_string(audio_item, M.SOURCE_WORDS_KEY, M.serialize_source_words(snapped_words))
   return true
+end
+
+function M.set_take_markers_visible(visible, subtitle_model)
+  if not subtitle_model then return 0 end
+  subtitle_model.set_take_markers_visible(visible)
+  local affected = 0
+  for ti = 0, r.CountTracks(0) - 1 do
+    local track = r.GetTrack(0, ti)
+    for i = 0, r.CountTrackMediaItems(track) - 1 do
+      local item = r.GetTrackMediaItem(track, i)
+      local take = r.GetActiveTake(item)
+      if take and (
+          get_string(item, M.MANAGED_AUDIO_KEY) == "1" or
+          get_string(item, M.SOURCE_WORDS_KEY) ~= "" or
+          subtitle_model.get_take_string(
+            take, subtitle_model.HIDDEN_TAKE_MARKERS_KEY) ~= "") then
+        if visible then
+          local restored = subtitle_model.show_take_markers(take)
+          if restored == 0 then
+            M.rebuild_take_markers(item, subtitle_model)
+          end
+        else
+          subtitle_model.hide_take_markers(take)
+        end
+        affected = affected + 1
+      end
+    end
+  end
+  r.UpdateArrange()
+  return affected
 end
 
 return M

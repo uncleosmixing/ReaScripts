@@ -15,7 +15,21 @@ M.LEGACY_TIMING_KEY = "P_EXT:REATITLES_WORD_TIMING"
 M.TIMING_ANCHOR_KEY = "P_EXT:REATITLES_TIMING_ANCHOR"
 M.TIMING_LENGTH_KEY = "P_EXT:REATITLES_TIMING_LENGTH"
 M.AUDIO_WORDS_KEY = "P_EXT:REATITLES_AUDIO_WORDS"
+M.HIDDEN_TAKE_MARKERS_KEY = "P_EXT:REATITLES_HIDDEN_TAKE_MARKERS"
+M.TAKE_MARKERS_SECTION = "ReaTitles"
+M.TAKE_MARKERS_VISIBLE_KEY = "take_markers_visible"
 M.EPSILON = 0.000001
+
+function M.take_markers_visible()
+  return reaper.GetExtState(
+    M.TAKE_MARKERS_SECTION, M.TAKE_MARKERS_VISIBLE_KEY) ~= "0"
+end
+
+function M.set_take_markers_visible(visible)
+  reaper.SetExtState(
+    M.TAKE_MARKERS_SECTION, M.TAKE_MARKERS_VISIBLE_KEY,
+    visible and "1" or "0", true)
+end
 
 function M.get_string(item, key)
   local _, value = reaper.GetSetMediaItemInfo_String(item, key, "", false)
@@ -242,9 +256,12 @@ end
 
 function M.set_audio_words(take, words)
   -- Rebuild take markers and snap times
-  local num_markers = reaper.GetNumTakeMarkers(take)
-  for i = num_markers - 1, 0, -1 do
-    reaper.DeleteTakeMarker(take, i)
+  local markers_visible = M.take_markers_visible()
+  if markers_visible then
+    local num_markers = reaper.GetNumTakeMarkers(take)
+    for i = num_markers - 1, 0, -1 do
+      reaper.DeleteTakeMarker(take, i)
+    end
   end
   
   local calibration = M.get_calibration_offset()
@@ -254,7 +271,9 @@ function M.set_audio_words(take, words)
   for _, word in ipairs(words) do
     local start_time = word[1] + calibration
     local snapped = M.snap_word_to_onset(take, start_time, prev_end)
-    reaper.SetTakeMarker(take, -1, word[3], snapped, 0)
+    if markers_visible then
+      reaper.SetTakeMarker(take, -1, word[3], snapped, 0)
+    end
     
     local w_end = word[2] + calibration
     if w_end < snapped then w_end = snapped + 0.1 end
@@ -276,6 +295,71 @@ function M.get_audio_words(take)
   local data = M.get_take_string(take, M.AUDIO_WORDS_KEY)
   if data == "" then return {} end
   return M.parse_words(data)
+end
+
+local function escape_marker_name(value)
+  return tostring(value or "")
+    :gsub("%%", "%%25")
+    :gsub("\t", "%%09")
+    :gsub("\r", "%%0D")
+    :gsub("\n", "%%0A")
+end
+
+local function unescape_marker_name(value)
+  return tostring(value or "")
+    :gsub("%%0A", "\n")
+    :gsub("%%0D", "\r")
+    :gsub("%%09", "\t")
+    :gsub("%%25", "%%")
+end
+
+function M.hide_take_markers(take)
+  if not take then return 0 end
+  local existing = M.get_take_string(take, M.HIDDEN_TAKE_MARKERS_KEY)
+  if existing ~= "" then return 0 end
+  local rows = {}
+  local count = reaper.GetNumTakeMarkers(take)
+  for i = 0, count - 1 do
+    local pos, name, color = reaper.GetTakeMarker(take, i)
+    if pos and pos >= 0 then
+      rows[#rows + 1] = string.format(
+        "%.9f\t%d\t%s", pos, tonumber(color) or 0,
+        escape_marker_name(name))
+    end
+  end
+  if #rows > 0 then
+    M.set_take_string(take, M.HIDDEN_TAKE_MARKERS_KEY, table.concat(rows, "\n"))
+  end
+  for i = count - 1, 0, -1 do
+    reaper.DeleteTakeMarker(take, i)
+  end
+  return #rows
+end
+
+function M.show_take_markers(take)
+  if not take then return 0 end
+  local snapshot = M.get_take_string(take, M.HIDDEN_TAKE_MARKERS_KEY)
+  local restored = 0
+  if snapshot ~= "" then
+    for row in snapshot:gmatch("[^\r\n]+") do
+      local pos, color, name =
+        row:match("^([%-%d%.]+)\t([%-%d]+)\t(.*)$")
+      pos, color = tonumber(pos), tonumber(color)
+      if pos then
+        reaper.SetTakeMarker(
+          take, -1, unescape_marker_name(name), pos, color or 0)
+        restored = restored + 1
+      end
+    end
+    M.set_take_string(take, M.HIDDEN_TAKE_MARKERS_KEY, "")
+    return restored
+  end
+  local words = M.get_audio_words(take)
+  if #words > 0 then
+    M.set_audio_words(take, words)
+    restored = #words
+  end
+  return restored
 end
 
 return M

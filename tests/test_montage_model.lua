@@ -18,6 +18,8 @@ local function audio(pos, length, source_offset)
         D_PLAYRATE = 1,
         D_STARTOFFS = source_offset,
       },
+      strings = {},
+      markers = {},
     },
   }
   tracks[1].items[#tracks[1].items + 1] = item
@@ -58,6 +60,32 @@ reaper = {
   end,
   GetActiveTake = function(item) return item.take end,
   GetMediaItemTakeInfo_Value = function(take, key) return take.values[key] or 0 end,
+  GetSetMediaItemTakeInfo_String = function(take, key, value, set)
+    if set then take.strings[key] = value end
+    return true, take.strings[key] or ""
+  end,
+  GetExtState = function(_, key)
+    return key == "take_markers_visible" and "1" or ""
+  end,
+  SetExtState = function() end,
+  GetNumTakeMarkers = function(take) return #take.markers end,
+  GetTakeMarker = function(take, index)
+    local marker = take.markers[index + 1]
+    if not marker then return -1, "", 0 end
+    return marker.pos, marker.name, marker.color
+  end,
+  SetTakeMarker = function(take, _, name, pos, color)
+    take.markers[#take.markers + 1] = {
+      name = name,
+      pos = pos,
+      color = color or 0,
+    }
+    return #take.markers - 1
+  end,
+  DeleteTakeMarker = function(take, index)
+    table.remove(take.markers, index + 1)
+    return true
+  end,
   AddMediaItemToTrack = function(track)
     local item = {
       values = {
@@ -90,6 +118,23 @@ reaper = {
 
 local subtitle_model = dofile("rt_subtitle_model.lua")
 local montage_model = dofile("rt_montage_model.lua")
+
+-- Hiding take markers preserves exact position, name and color, then restores
+-- them without transcription or word-map changes.
+do
+  local marker_item = audio(0, 2, 0)
+  marker_item.take.markers = {
+    { pos = 0.25, name = "word\tone", color = 123 },
+    { pos = 1.50, name = "word two", color = 456 },
+  }
+  assert(subtitle_model.hide_take_markers(marker_item.take) == 2)
+  assert(#marker_item.take.markers == 0)
+  assert(subtitle_model.show_take_markers(marker_item.take) == 2)
+  assert(#marker_item.take.markers == 2)
+  assert(marker_item.take.markers[1].pos == 0.25)
+  assert(marker_item.take.markers[1].name == "word\tone")
+  assert(marker_item.take.markers[1].color == 123)
+end
 
 local function reset()
   tracks[1].items = {}
