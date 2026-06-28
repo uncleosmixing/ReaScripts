@@ -1,6 +1,6 @@
 -- @description Prompter
 -- @author Chirick, ReaTitles contributors
--- @version 1.8.8
+-- @version 1.8.9
 -- @changelog
 --   + Magnetic phrase editing, offline transcription and Word review round-trip
 -- @link https://github.com/uncleosmixing/ReaScripts
@@ -412,6 +412,12 @@ local editing_idx = nil       -- index of item being edited (nil = none)
 local edit_buf = ""           -- text buffer for editing
 local edit_focus_pending = false
 local edit_had_focus = false
+local word_hover_alpha = {}   -- soft per-word hover animation (0..1)
+
+local function color_with_alpha(color, alpha)
+    local value = math.max(0, math.min(255, math.floor(alpha + 0.5)))
+    return color - (color % 256) + value
+end
 
 -- Drag & drop state
 local drag_source_idx = nil   -- index of item being dragged
@@ -2430,7 +2436,8 @@ local function draw_list()
         else
             -- Normal display
             local rendered_inline = false
-            if r.type == "audio_item" and not (search and search ~= "") then
+            if r.type == "audio_item" and src.kind ~= "combined" and
+               not (search and search ~= "") then
                 local take = reaper.GetActiveTake(r.item_ptr)
                 if take then
                     local words = subtitle_model.get_audio_words(take)
@@ -2453,58 +2460,85 @@ local function draw_list()
                             local text_col_w = ui_dimensions.win_width - 15 - ui_dimensions.time_width - ui_dimensions.space_width
                             local start_x = ui_dimensions.time_width + ui_dimensions.space_width
                             
-                            reaper.ImGui_PushStyleVar(ctx, reaper.ImGui_StyleVar_ItemSpacing(), 4, 3)
-                            reaper.ImGui_PushStyleVar(ctx, reaper.ImGui_StyleVar_FramePadding(), 0, 0)
-                            reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_Button(), 0)
-                            reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_ButtonHovered(), 0xFFFFFF1A)
-                            reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_ButtonActive(), 0xFFFFFF33)
-                            
+                            local dl = reaper.ImGui_GetWindowDrawList(ctx)
+                            local gap = 3
+                            local pad_x, pad_y = 4, 2
+                            local row_end_screen = wx + start_x + text_col_w
+
                             for wi, w in ipairs(active_words) do
                                 reaper.ImGui_PushID(ctx, "word_inline_" .. i .. "_" .. wi)
                                 local wl_pos = item_pos + (w[1] - start_offs) / playrate
                                 local cur_pos = reaper.GetCursorPosition()
                                 local is_cur_word = math.abs(cur_pos - wl_pos) < 0.15
-                                
-                                if is_cur_word then
-                                    reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_Text(), 0xFF8C00FF)
-                                else
-                                    local col = is_current and theme.accent or element_color
-                                    reaper.ImGui_PushStyleColor(ctx, reaper.ImGui_Col_Text(), col)
-                                end
-                                
-                                local word_text = w[3]
+                                local text_color = is_cur_word and 0xFF8C00FF or
+                                    (is_current and theme.accent or element_color)
+                                local word_text = tostring(w[3] or ""):gsub("^%s+", "")
+                                local word_w, word_h =
+                                    reaper.ImGui_CalcTextSize(ctx, word_text)
+                                local hit_w = word_w + pad_x * 2
+                                local hit_h = word_h + pad_y * 2
                                 local cur_x = reaper.ImGui_GetCursorPosX(ctx)
                                 if cur_x < start_x then
                                     reaper.ImGui_SetCursorPosX(ctx, start_x)
                                 end
-                                
-                                if reaper.ImGui_Button(ctx, word_text) then
+
+                                reaper.ImGui_InvisibleButton(
+                                    ctx, "##word", hit_w, hit_h)
+                                local hovered = reaper.ImGui_IsItemHovered(ctx)
+                                local word_key = tostring(r.item_ptr) .. ":" ..
+                                    string.format("%.6f", w[1])
+                                local alpha = word_hover_alpha[word_key] or 0
+                                local target = hovered and 1 or 0
+                                alpha = alpha + (target - alpha) * 0.22
+                                if math.abs(target - alpha) < 0.01 then
+                                    alpha = target
+                                end
+                                word_hover_alpha[word_key] = alpha
+
+                                local bx1, by1 =
+                                    reaper.ImGui_GetItemRectMin(ctx)
+                                local bx2, by2 =
+                                    reaper.ImGui_GetItemRectMax(ctx)
+                                if alpha > 0.01 then
+                                    -- A quiet glow and translucent surface:
+                                    -- interaction is visible without looking
+                                    -- like a row of conventional buttons.
+                                    reaper.ImGui_DrawList_AddRectFilled(
+                                        dl, bx1 - 2, by1 - 1, bx2 + 2, by2 + 1,
+                                        color_with_alpha(text_color, 18 * alpha), 6)
+                                    reaper.ImGui_DrawList_AddRectFilled(
+                                        dl, bx1, by1, bx2, by2,
+                                        color_with_alpha(0xFFFFFF00, 10 * alpha), 5)
+                                end
+                                reaper.ImGui_DrawList_AddText(
+                                    dl, bx1 + pad_x, by1 + pad_y,
+                                    text_color, word_text)
+
+                                if reaper.ImGui_IsItemClicked(ctx, 0) then
                                     reaper.SetEditCurPos(wl_pos, true, false)
                                 end
-                                if reaper.ImGui_IsItemHovered(ctx) and
+                                if hovered and
                                    reaper.ImGui_IsMouseDoubleClicked(ctx, 0) then
                                     editing_idx = i
                                     edit_buf = r.name or ""
                                     edit_focus_pending = true
                                     edit_had_focus = false
                                 end
-                                reaper.ImGui_PopStyleColor(ctx, 1)
                                 reaper.ImGui_PopID(ctx)
-                                
+
                                 if wi < #active_words then
-                                    local next_word_text = active_words[wi + 1][3]
-                                    local next_word_w = reaper.ImGui_CalcTextSize(ctx, next_word_text)
-                                    local _, _ = reaper.ImGui_GetItemRectMin(ctx)
-                                    local last_x2, _ = reaper.ImGui_GetItemRectMax(ctx)
-                                    local next_x = last_x2 + 4
-                                    
-                                    if next_x + next_word_w <= start_x + text_col_w then
-                                        reaper.ImGui_SameLine(ctx)
+                                    local next_text = tostring(
+                                        active_words[wi + 1][3] or ""):gsub("^%s+", "")
+                                    local next_w =
+                                        reaper.ImGui_CalcTextSize(ctx, next_text)
+                                    if bx2 + gap + next_w + pad_x * 2 <=
+                                       row_end_screen then
+                                        reaper.ImGui_SameLine(ctx, 0, gap)
+                                    else
+                                        reaper.ImGui_SetCursorPosX(ctx, start_x)
                                     end
                                 end
                             end
-                            reaper.ImGui_PopStyleColor(ctx, 3)
-                            reaper.ImGui_PopStyleVar(ctx, 2)
                         end
                     end
                 end
