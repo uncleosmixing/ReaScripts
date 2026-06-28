@@ -260,6 +260,94 @@ function M.mark_manual_text(subtitle_item)
   set_string(subtitle_item, M.MANUAL_TEXT_KEY, "1")
 end
 
+local function text_tokens(text)
+  local tokens = {}
+  for token in tostring(text or ""):gmatch("%S+") do
+    tokens[#tokens + 1] = token
+  end
+  return tokens
+end
+
+local function marker_text(token, old_text, absolute_index)
+  local prefix = tostring(old_text or ""):match("^%s*") or ""
+  if prefix == "" and absolute_index > 1 then prefix = " " end
+  return prefix .. token
+end
+
+function M.apply_text_to_audio_item(audio_item, text, subtitle_model)
+  if not audio_item or not subtitle_model then return false end
+  local take = r.GetActiveTake(audio_item)
+  if not take then return false end
+  local words = subtitle_model.get_audio_words(take)
+  if #words == 0 then
+    words = M.parse_source_words(get_string(audio_item, M.SOURCE_WORDS_KEY))
+  end
+  if #words == 0 then return false end
+
+  local mapping = take_mapping(audio_item)
+  if not mapping then return false end
+  local first_index, last_index
+  for index, word in ipairs(words) do
+    local midpoint = (word[1] + word[2]) * 0.5
+    if midpoint >= mapping.source_start - M.EPSILON and
+       midpoint < mapping.source_end + M.EPSILON then
+      first_index = first_index or index
+      last_index = index
+    end
+  end
+  if not first_index or not last_index then return false end
+
+  local tokens = text_tokens(text)
+  if #tokens == 0 then return false end
+  local active_count = last_index - first_index + 1
+  local replacement = {}
+  if #tokens == active_count then
+    for offset, token in ipairs(tokens) do
+      local absolute_index = first_index + offset - 1
+      local old_word = words[absolute_index]
+      replacement[#replacement + 1] = {
+        old_word[1],
+        old_word[2],
+        marker_text(token, old_word[3], absolute_index),
+      }
+    end
+  else
+    local range_start = words[first_index][1]
+    local range_end = words[last_index][2]
+    local duration = math.max(0.001, range_end - range_start)
+    local total_weight = 0
+    for _, token in ipairs(tokens) do
+      total_weight = total_weight + math.max(1, #token)
+    end
+    local cursor = range_start
+    for offset, token in ipairs(tokens) do
+      local weight = math.max(1, #token)
+      local word_end
+      if offset == #tokens then
+        word_end = range_end
+      else
+        word_end = cursor + duration * weight / total_weight
+      end
+      replacement[#replacement + 1] = {
+        cursor,
+        word_end,
+        marker_text(token, nil, first_index + offset - 1),
+      }
+      cursor = word_end
+    end
+  end
+
+  local updated = {}
+  for index = 1, first_index - 1 do updated[#updated + 1] = words[index] end
+  for _, word in ipairs(replacement) do updated[#updated + 1] = word end
+  for index = last_index + 1, #words do updated[#updated + 1] = words[index] end
+
+  subtitle_model.set_audio_words(take, updated)
+  set_string(audio_item, M.SOURCE_WORDS_KEY, M.serialize_source_words(updated))
+  set_string(audio_item, M.MANUAL_TEXT_KEY, "1")
+  return true
+end
+
 local function migrate_group_pairs(all_items, subtitle_track, subtitle_model,
                                    change)
   local groups = {}

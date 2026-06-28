@@ -55,6 +55,8 @@ The Uncle Os ReaPack repository contains:
 - FFmpeg (installed automatically through WinGet on Windows when missing)
 - WhisperX with Whisper model `large-v3` by default; wav2vec2 performs
   forced alignment for precise word timestamps
+- Automatic multilingual detection preserves English words and names in mixed
+  Russian/English speech whenever WhisperX can identify them
 
 The first dependency and model setup requires internet access. When the model is absent, ReaTitles downloads it once into the local Hugging Face cache; later transcriptions use the cached model offline.
 

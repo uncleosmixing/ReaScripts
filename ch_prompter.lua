@@ -1,6 +1,6 @@
 -- @description Prompter
 -- @author Chirick, ReaTitles contributors
--- @version 1.8.6
+-- @version 1.8.7
 -- @changelog
 --   + Magnetic phrase editing, offline transcription and Word review round-trip
 -- @link https://github.com/uncleosmixing/ReaScripts
@@ -1007,10 +1007,14 @@ local function save_element_text(element, text)
     end
     if element.item_ptr and reaper.ValidatePtr(element.item_ptr, "MediaItem*") then
         reaper.GetSetMediaItemInfo_String(element.item_ptr, "P_NOTES", text, true)
-        -- Preserve source-word timing: it lets ordinary REAPER edits
-        -- distinguish removed silence from removed speech. The montage model
-        -- keeps this manual text while the active word signature is unchanged.
-        montage_model.mark_manual_text(element.item_ptr)
+        if element.type == "audio_item" then
+            montage_model.apply_text_to_audio_item(
+                element.item_ptr, text, subtitle_model)
+        else
+            -- Preserve source-word timing: it lets ordinary REAPER edits
+            -- distinguish removed silence from removed speech.
+            montage_model.mark_manual_text(element.item_ptr)
+        end
         local take = reaper.GetActiveTake(element.item_ptr)
         if take then
             local short = text

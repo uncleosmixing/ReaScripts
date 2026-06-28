@@ -24,6 +24,10 @@ os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
 
 CPU_COUNT = multiprocessing.cpu_count()
 WHISPERX_ALIGNMENT_FAILED = False
+MULTILINGUAL_PROMPT = (
+    "Русская речь может содержать English words, names, brands and "
+    "abbreviations. Preserve English words in Latin script."
+)
 
 HAVE_WHISPERX = False
 try:
@@ -144,6 +148,7 @@ def transcribe_whisperx(wav_path, model_size, language, duration, emit_progress)
             "without_timestamps": False,
             "max_initial_timestamp": 1.0,
             "word_timestamps": True,
+            "initial_prompt": MULTILINGUAL_PROMPT,
         },
         local_files_only=local_only,
         threads=CPU_COUNT,
@@ -266,7 +271,8 @@ def transcribe_stable(wav_path, model_size, language, duration, emit_progress):
         wav_path, language=language,
         beam_size=5, patience=1.2, temperature=0.0,
         condition_on_previous_text=False,
-        suppress_silence=True, vad=True)
+        suppress_silence=True, vad=True,
+        initial_prompt=MULTILINGUAL_PROMPT)
     print(f"[stable-whisper] Done in {time.time()-t0:.1f}s", file=sys.stderr)
 
     result_data = []
@@ -289,14 +295,17 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--items", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--model", default="small")
-    parser.add_argument("--language", default="ru")
+    parser.add_argument("--model", default="large-v3")
+    parser.add_argument(
+        "--language", default="auto",
+        help="Language code or 'auto' for multilingual speech detection")
     parser.add_argument("--status", required=True)
     parser.add_argument("--progress", required=True)
     parser.add_argument("--backend", default="auto",
                         choices=["auto", "whisperx", "stable"],
                         help="auto=whisperx if available, else stable-whisper")
     args = parser.parse_args()
+    language = None if args.language in ("", "auto", "none") else args.language
 
     backend = args.backend
     if backend == "auto":
@@ -350,12 +359,12 @@ def main():
         try:
             if backend == "whisperx" and not WHISPERX_ALIGNMENT_FAILED:
                 segments = transcribe_whisperx(
-                    wav, args.model, args.language, duration, emit_progress)
+                    wav, args.model, language, duration, emit_progress)
             else:
                 if backend == "whisperx":
                     progress_state["backend"] = "stable"
                 segments = transcribe_stable(
-                    wav, args.model, args.language, duration, emit_progress)
+                    wav, args.model, language, duration, emit_progress)
             all_results.append(segments)
         except Exception as e:
             import traceback

@@ -68,6 +68,8 @@ reaper = {
     return key == "take_markers_visible" and "1" or ""
   end,
   SetExtState = function() end,
+  GetProjExtState = function() return 0, "" end,
+  SetProjExtState = function() return 1 end,
   GetNumTakeMarkers = function(take) return #take.markers end,
   GetTakeMarker = function(take, index)
     local marker = take.markers[index + 1]
@@ -118,6 +120,24 @@ reaper = {
 
 local subtitle_model = dofile("rt_subtitle_model.lua")
 local montage_model = dofile("rt_montage_model.lua")
+
+-- Editing a managed audio phrase updates the persistent word map and visible
+-- take-marker names while preserving one-to-one word timing.
+do
+  local edited_item = audio(0, 3, 0)
+  local original_words = {
+    { 0.1, 0.8, " Первое" },
+    { 0.9, 1.6, " виброл" },
+    { 1.7, 2.5, " третье" },
+  }
+  subtitle_model.set_audio_words(edited_item.take, original_words)
+  assert(montage_model.apply_text_to_audio_item(
+    edited_item, "Первое Vivol третье", subtitle_model))
+  local edited_words = subtitle_model.get_audio_words(edited_item.take)
+  assert(edited_words[2][1] == 0.9 and edited_words[2][2] == 1.6)
+  assert(edited_words[2][3]:find("Vivol", 1, true))
+  assert(edited_item.take.markers[2].name:find("Vivol", 1, true))
+end
 
 -- Hiding take markers preserves exact position, name and color, then restores
 -- them without transcription or word-map changes.
