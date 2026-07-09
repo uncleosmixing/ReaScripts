@@ -301,6 +301,7 @@ end
 function MonitorManager.ReadAnalyzer()
   local current_ok, _, analyzer_reinstalled = AnalyzerTap.EnsureCurrent()
   if not current_ok then
+    -- Keep the UI alive; the install/update button can still recover manually.
   elseif analyzer_reinstalled then
     MonitorFxChain.EnsureOrder(true)
   end
@@ -308,7 +309,18 @@ function MonitorManager.ReadAnalyzer()
   local analyzer = GmemRead.ReadAnalyzer()
   local master = GetMaster()
 
-  if not analyzer.active then
+  -- Compensate for master fader: AnalyzerTap is pre-fader, REAPER meter is post-fader.
+  -- Multiply raw values by fader gain so RCC display matches REAPER meter.
+  local fader_gain = reaper.GetMediaTrackInfo_Value(master, "D_VOL")
+
+  if analyzer.active then
+    analyzer.peak_l = (analyzer.peak_l or 0) * fader_gain
+    analyzer.peak_r = (analyzer.peak_r or 0) * fader_gain
+    analyzer.rms_l = (analyzer.rms_l or 0) * fader_gain
+    analyzer.rms_r = (analyzer.rms_r or 0) * fader_gain
+    analyzer.true_peak_l = (analyzer.true_peak_l or 0) * fader_gain
+    analyzer.true_peak_r = (analyzer.true_peak_r or 0) * fader_gain
+  else
     analyzer.peak_l = reaper.Track_GetPeakInfo(master, 0)
     analyzer.peak_r = reaper.Track_GetPeakInfo(master, 1)
     analyzer.true_peak_l = math.max(analyzer.true_peak_l or 0, analyzer.peak_l or 0)
