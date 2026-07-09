@@ -1,8 +1,8 @@
 -- @description Room Control Center
 -- @author Uncle Os
--- @version 1.0.8
+-- @version 1.0.1
 -- @changelog
---   + AnalyzerTap: Cox peak decay + hipkval (matches Cockos meter)
+--   + Initial ReaPack release
 -- @link https://github.com/uncleosmixing/ReaScripts
 -- @about
 --   # Room Control Center

@@ -11,7 +11,7 @@ Dockable monitoring, metering, reference playback and headphone correction contr
 Requires ReaImGui.
         ]]></description>
       </metadata>
-      <version name="1.0.8" author="Uncle Os">
+      <version name="1.0.1" author="Uncle Os">
         <source main="main">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/RCC.lua</source>
         <source file="Core/AnalyzerTap.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Core/AnalyzerTap.lua</source>
         <source file="Core/GmemBridge.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Core/GmemBridge.lua</source>
@@ -35,48 +35,6 @@ Requires ReaImGui.
         <source file="Shared/RCCUI.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Shared/RCCUI.lua</source>
         <source file="Shared/RCCUIKit.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Shared/RCCUIKit.lua</source>
         <source file="Shared/RCCUIUtils.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Shared/RCCUIUtils.lua</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/background.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/background.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/background_dark.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/background_dark.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/bypass.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/bypass.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/bypass_select.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/bypass_select.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/config.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/config.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/cubes.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/cubes.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/cubes_on.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/cubes_on.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/fullrange.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/fullrange.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/fullrange_on.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/fullrange_on.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/fullrange_select.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/fullrange_select.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/main.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/main.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/main_on.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/main_on.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/slew.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/slew.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/slew_on.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/slew_on.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/smartphone.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/smartphone.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/smartphone_on.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/smartphone_on.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/sub.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/sub.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/sub_on.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/sub_on.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/vinyl.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/vinyl.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/gui/vinyl_on.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/gui/vinyl_on.png</source>
-        <source file="ThirdParty/roof_control/Data/roof_control/hp.db">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/roof_control/hp.db</source>
-        <source file="ThirdParty/roof_control/Data/toolbar_icons/.gitkeep">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/toolbar_icons/.gitkeep</source>
-        <source file="ThirdParty/roof_control/Data/toolbar_icons/toolbar_roof_control_cube.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/toolbar_icons/toolbar_roof_control_cube.png</source>
-        <source file="ThirdParty/roof_control/Data/toolbar_icons/toolbar_roof_control_full.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/toolbar_icons/toolbar_roof_control_full.png</source>
-        <source file="ThirdParty/roof_control/Data/toolbar_icons/toolbar_roof_control_main.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/toolbar_icons/toolbar_roof_control_main.png</source>
-        <source file="ThirdParty/roof_control/Data/toolbar_icons/toolbar_roof_control_slew.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/toolbar_icons/toolbar_roof_control_slew.png</source>
-        <source file="ThirdParty/roof_control/Data/toolbar_icons/toolbar_roof_control_smartphone.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/toolbar_icons/toolbar_roof_control_smartphone.png</source>
-        <source file="ThirdParty/roof_control/Data/toolbar_icons/toolbar_roof_control_sub.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/toolbar_icons/toolbar_roof_control_sub.png</source>
-        <source file="ThirdParty/roof_control/Data/toolbar_icons/toolbar_roof_control_vinyl.png">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Data/toolbar_icons/toolbar_roof_control_vinyl.png</source>
-        <source file="ThirdParty/roof_control/Effects/roof_control/roof_control">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Effects/roof_control/roof_control</source>
-        <source file="ThirdParty/roof_control/LICENSE">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/LICENSE</source>
-        <source file="ThirdParty/roof_control/README.md">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/README.md</source>
-        <source file="ThirdParty/roof_control/Scripts/roof_control/roof_bubrik.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Scripts/roof_control/roof_bubrik.lua</source>
-        <source file="ThirdParty/roof_control/Scripts/roof_control/roof_control_bypass.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Scripts/roof_control/roof_control_bypass.lua</source>
-        <source file="ThirdParty/roof_control/Scripts/roof_control/roof_control_cubes.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Scripts/roof_control/roof_control_cubes.lua</source>
-        <source file="ThirdParty/roof_control/Scripts/roof_control/roof_control_enable.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Scripts/roof_control/roof_control_enable.lua</source>
-        <source file="ThirdParty/roof_control/Scripts/roof_control/roof_control_fullrange.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Scripts/roof_control/roof_control_fullrange.lua</source>
-        <source file="ThirdParty/roof_control/Scripts/roof_control/roof_control_main.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Scripts/roof_control/roof_control_main.lua</source>
-        <source file="ThirdParty/roof_control/Scripts/roof_control/roof_control_slew.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Scripts/roof_control/roof_control_slew.lua</source>
-        <source file="ThirdParty/roof_control/Scripts/roof_control/roof_control_smartphone.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Scripts/roof_control/roof_control_smartphone.lua</source>
-        <source file="ThirdParty/roof_control/Scripts/roof_control/roof_control_subwoofer.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Scripts/roof_control/roof_control_subwoofer.lua</source>
-        <source file="ThirdParty/roof_control/Scripts/roof_control/roof_control_vinyl.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/ThirdParty/roof_control/Scripts/roof_control/roof_control_vinyl.lua</source>
         <source file="UI/HeadphoneCalPanel.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/UI/HeadphoneCalPanel.lua</source>
         <source file="UI/LevelBar.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/UI/LevelBar.lua</source>
         <source file="UI/LevelPanel.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/UI/LevelPanel.lua</source>

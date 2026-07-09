@@ -207,12 +207,11 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
   local rms_l = analyzer.rms_l or 0
   local rms_r = analyzer.rms_r or 0
 
-  -- Peak ballistics: Cox formula (instant attack, 150ms half-life decay)
+  -- Smooth Peak Ballistics (instant attack, timed decay independent of UI FPS)
   state.display_peak_l = state.display_peak_l or 0
   state.display_peak_r = state.display_peak_r or 0
-  local pk_decay = 0.5 ^ (dt / 0.150)
-  state.display_peak_l = math.max(peak_l, state.display_peak_l * pk_decay)
-  state.display_peak_r = math.max(peak_r, state.display_peak_r * pk_decay)
+  state.display_peak_l = FollowValue(state.display_peak_l, peak_l, dt, 0.001, 0.20)
+  state.display_peak_r = FollowValue(state.display_peak_r, peak_r, dt, 0.001, 0.20)
 
   -- Smooth RMS Ballistics
   state.display_rms_l = state.display_rms_l or 0
@@ -230,14 +229,25 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
   state.true_peak_hold_timer_l = state.true_peak_hold_timer_l or 0
   state.true_peak_hold_timer_r = state.true_peak_hold_timer_r or 0
 
-  -- Freeze indicators: max peak since last reset
+  -- Persistent session max (survives across frames, reset only by click)
   state.peak_max_l = state.peak_max_l or 0
   state.peak_max_r = state.peak_max_r or 0
-  state.peak_max_l = math.max(state.peak_max_l, peak_l)
-  state.peak_max_r = math.max(state.peak_max_r, peak_r)
+  state.true_peak_max_l = state.true_peak_max_l or 0
+  state.true_peak_max_r = state.true_peak_max_r or 0
 
-  UpdatePeakHold(state, "true_peak_hold_l", "true_peak_hold_timer_l", math.max(analyzer.true_peak_l or 0, peak_l), dt, 1.5, 0.75)
-  UpdatePeakHold(state, "true_peak_hold_r", "true_peak_hold_timer_r", math.max(analyzer.true_peak_r or 0, peak_r), dt, 1.5, 0.75)
+  local hold_time = 1.5
+  local true_peak_l = math.max(analyzer.true_peak_l or 0, peak_l)
+  local true_peak_r = math.max(analyzer.true_peak_r or 0, peak_r)
+  UpdatePeakHold(state, "peak_hold_l", "peak_hold_timer_l", peak_l, dt, hold_time, 0.75)
+  UpdatePeakHold(state, "peak_hold_r", "peak_hold_timer_r", peak_r, dt, hold_time, 0.75)
+  UpdatePeakHold(state, "true_peak_hold_l", "true_peak_hold_timer_l", true_peak_l, dt, hold_time, 0.75)
+  UpdatePeakHold(state, "true_peak_hold_r", "true_peak_hold_timer_r", true_peak_r, dt, hold_time, 0.75)
+
+  -- Update persistent session max
+  if peak_l > state.peak_max_l then state.peak_max_l = peak_l end
+  if peak_r > state.peak_max_r then state.peak_max_r = peak_r end
+  if true_peak_l > state.true_peak_max_l then state.true_peak_max_l = true_peak_l end
+  if true_peak_r > state.true_peak_max_r then state.true_peak_max_r = true_peak_r end
 
   -- Calculate normalized values for RMS, Peak, and Peak Hold based on active mode
   local rms_l_norm, rms_r_norm, peak_l_norm, peak_r_norm, hold_l_norm, hold_r_norm
@@ -276,8 +286,8 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
     rms_r_norm = cfg.to_norm(state.display_rms_r)
     peak_l_norm = cfg.to_norm(state.display_peak_l)
     peak_r_norm = cfg.to_norm(state.display_peak_r)
-    hold_l_norm = cfg.to_norm(state.peak_max_l)
-    hold_r_norm = cfg.to_norm(state.peak_max_r)
+    hold_l_norm = cfg.to_norm(state.peak_hold_l)
+    hold_r_norm = cfg.to_norm(state.peak_hold_r)
   end
 
   -- Detect and hold persistent clip state based on active mode standards
@@ -373,8 +383,8 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
       color_l = cfg.label_color(state.display_lufs_m, state.clip_l)
       color_r = cfg.label_color(state.display_lufs_m, state.clip_r)
     else
-      local db_l = UIUtils.Db(state.peak_max_l)
-      local db_r = UIUtils.Db(state.peak_max_r)
+      local db_l = UIUtils.Db(state.peak_hold_l)
+      local db_r = UIUtils.Db(state.peak_hold_r)
       db_l_text = cfg.format_db(db_l)
       db_r_text = cfg.format_db(db_r)
       color_l = cfg.label_color(db_l, state.clip_l)

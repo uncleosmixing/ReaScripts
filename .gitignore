@@ -11,3 +11,10 @@ rt_setup_status.txt
 __pycache__/
 *.pyc
 models/
+
+# ReaTitles - kept locally only
+ch_*.lua
+rt_*.lua
+rt_*.py
+rt_*.ps1
+tests/
