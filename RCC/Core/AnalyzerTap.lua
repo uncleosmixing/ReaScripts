@@ -68,9 +68,6 @@ fft_size = 2048;
 write_pos = 0;
 peak_l = 0;
 peak_r = 0;
-hipkval_l = 0;
-hipkval_r = 0;
-peak_decay = pow(0.5, 1.0 / max(1, srate) / 0.150);
 true_peak_l = 0;
 true_peak_r = 0;
 rms_l = 0;
@@ -222,13 +219,8 @@ abs_r = abs(spl1);
 k_l = kweight_l(spl0);
 k_r = kweight_r(spl1);
 
--- Cox formula: peak decay 150ms half-life
-peak_l = max(abs_l, peak_l * peak_decay);
-peak_r = max(abs_r, peak_r * peak_decay);
-
--- Hipkval: absolute max, never decays (matches Cox)
-abs_l > hipkval_l ? hipkval_l = abs_l;
-abs_r > hipkval_r ? hipkval_r = abs_r;
+peak_l = max(abs_l, peak_l);
+peak_r = max(abs_r, peak_r);
 
 tp_frame_l = abs_l;
 tp_frame_r = abs_r;
@@ -439,13 +431,11 @@ gmem_write_counter >= 256 ? (
   gmem[15] = scope_write;
   gmem[17] = 1;
   gmem[18] = 1;
-  gmem[19] = hipkval_l;
-  gmem[20] = hipkval_r;
   gmem[151] = waveform_write;
   gmem[152] = scope_points;
   gmem[153] = srate;
-  hipkval_l = 0;
-  hipkval_r = 0;
+  peak_l = 0;
+  peak_r = 0;
   true_peak_l = 0;
   true_peak_r = 0;
 
