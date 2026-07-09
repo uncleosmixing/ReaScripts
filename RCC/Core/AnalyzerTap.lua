@@ -70,7 +70,7 @@ peak_l = 0;
 peak_r = 0;
 hipkval_l = 0;
 hipkval_r = 0;
-peak_decay = 0;
+peak_decay = pow(0.5, 1.0 / max(1, srate) / 0.150);
 true_peak_l = 0;
 true_peak_r = 0;
 rms_l = 0;
@@ -222,8 +222,7 @@ abs_r = abs(spl1);
 k_l = kweight_l(spl0);
 k_r = kweight_r(spl1);
 
--- Cox formula: pk_decay = pow(0.5, 1/srate/0.150)
-peak_decay == 0 ? peak_decay = pow(0.5, 1 / max(1, srate) / 0.150);
+-- Cox formula: peak decay 150ms half-life
 peak_l = max(abs_l, peak_l * peak_decay);
 peak_r = max(abs_r, peak_r * peak_decay);
 
