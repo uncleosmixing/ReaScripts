@@ -207,11 +207,12 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
   local rms_l = analyzer.rms_l or 0
   local rms_r = analyzer.rms_r or 0
 
-  -- Smooth Peak Ballistics (instant attack, timed decay independent of UI FPS)
+  -- Peak ballistics: Cox formula (instant attack, 150ms half-life decay)
   state.display_peak_l = state.display_peak_l or 0
   state.display_peak_r = state.display_peak_r or 0
-  state.display_peak_l = FollowValue(state.display_peak_l, peak_l, dt, 0.001, 0.20)
-  state.display_peak_r = FollowValue(state.display_peak_r, peak_r, dt, 0.001, 0.20)
+  local pk_decay = 0.5 ^ (dt / 0.150)
+  state.display_peak_l = math.max(peak_l, state.display_peak_l * pk_decay)
+  state.display_peak_r = math.max(peak_r, state.display_peak_r * pk_decay)
 
   -- Smooth RMS Ballistics
   state.display_rms_l = state.display_rms_l or 0
