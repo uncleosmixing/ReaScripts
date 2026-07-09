@@ -1,10 +1,8 @@
 -- @description Room Control Center
 -- @author Uncle Os
--- @version 1.0.6
+-- @version 1.0.7
 -- @changelog
---   + Peak decay: Cox formula pow(0.5, dt/0.150), 150ms half-life
---   + Persistent session peak max with click reset
---   + Revert JSFX to original (stable)
+--   + Fix MonitorManager.lua syntax error (duplicate code)
 -- @link https://github.com/uncleosmixing/ReaScripts
 -- @about
 --   # Room Control Center
