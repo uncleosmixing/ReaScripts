@@ -230,25 +230,15 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
   state.true_peak_hold_timer_l = state.true_peak_hold_timer_l or 0
   state.true_peak_hold_timer_r = state.true_peak_hold_timer_r or 0
 
-  -- Persistent session max (survives across frames, reset only by click)
+  -- Persistent session max (freeze: only goes up, reset on click)
   state.peak_max_l = state.peak_max_l or 0
   state.peak_max_r = state.peak_max_r or 0
-  state.true_peak_max_l = state.true_peak_max_l or 0
-  state.true_peak_max_r = state.true_peak_max_r or 0
 
-  local hold_time = 1.5
-  local true_peak_l = math.max(analyzer.true_peak_l or 0, peak_l)
-  local true_peak_r = math.max(analyzer.true_peak_r or 0, peak_r)
-  UpdatePeakHold(state, "peak_hold_l", "peak_hold_timer_l", peak_l, dt, hold_time, 0.75)
-  UpdatePeakHold(state, "peak_hold_r", "peak_hold_timer_r", peak_r, dt, hold_time, 0.75)
-  UpdatePeakHold(state, "true_peak_hold_l", "true_peak_hold_timer_l", true_peak_l, dt, hold_time, 0.75)
-  UpdatePeakHold(state, "true_peak_hold_r", "true_peak_hold_timer_r", true_peak_r, dt, hold_time, 0.75)
+  state.peak_max_l = math.max(state.peak_max_l, peak_l)
+  state.peak_max_r = math.max(state.peak_max_r, peak_r)
 
-  -- Update persistent session max
-  if peak_l > state.peak_max_l then state.peak_max_l = peak_l end
-  if peak_r > state.peak_max_r then state.peak_max_r = peak_r end
-  if true_peak_l > state.true_peak_max_l then state.true_peak_max_l = true_peak_l end
-  if true_peak_r > state.true_peak_max_r then state.true_peak_max_r = true_peak_r end
+  UpdatePeakHold(state, "true_peak_hold_l", "true_peak_hold_timer_l", math.max(analyzer.true_peak_l or 0, peak_l), dt, 1.5, 0.75)
+  UpdatePeakHold(state, "true_peak_hold_r", "true_peak_hold_timer_r", math.max(analyzer.true_peak_r or 0, peak_r), dt, 1.5, 0.75)
 
   -- Calculate normalized values for RMS, Peak, and Peak Hold based on active mode
   local rms_l_norm, rms_r_norm, peak_l_norm, peak_r_norm, hold_l_norm, hold_r_norm
@@ -287,8 +277,8 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
     rms_r_norm = cfg.to_norm(state.display_rms_r)
     peak_l_norm = cfg.to_norm(state.display_peak_l)
     peak_r_norm = cfg.to_norm(state.display_peak_r)
-    hold_l_norm = cfg.to_norm(state.peak_hold_l)
-    hold_r_norm = cfg.to_norm(state.peak_hold_r)
+    hold_l_norm = cfg.to_norm(state.peak_max_l)
+    hold_r_norm = cfg.to_norm(state.peak_max_r)
   end
 
   -- Detect and hold persistent clip state based on active mode standards
