@@ -228,7 +228,13 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
   state.peak_hold_timer_r = state.peak_hold_timer_r or 0
   state.true_peak_hold_timer_l = state.true_peak_hold_timer_l or 0
   state.true_peak_hold_timer_r = state.true_peak_hold_timer_r or 0
-  
+
+  -- Persistent session max (survives across frames, reset only by click)
+  state.peak_max_l = state.peak_max_l or 0
+  state.peak_max_r = state.peak_max_r or 0
+  state.true_peak_max_l = state.true_peak_max_l or 0
+  state.true_peak_max_r = state.true_peak_max_r or 0
+
   local hold_time = 1.5
   local true_peak_l = math.max(analyzer.true_peak_l or 0, peak_l)
   local true_peak_r = math.max(analyzer.true_peak_r or 0, peak_r)
@@ -236,6 +242,12 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
   UpdatePeakHold(state, "peak_hold_r", "peak_hold_timer_r", peak_r, dt, hold_time, 0.75)
   UpdatePeakHold(state, "true_peak_hold_l", "true_peak_hold_timer_l", true_peak_l, dt, hold_time, 0.75)
   UpdatePeakHold(state, "true_peak_hold_r", "true_peak_hold_timer_r", true_peak_r, dt, hold_time, 0.75)
+
+  -- Update persistent session max
+  if peak_l > state.peak_max_l then state.peak_max_l = peak_l end
+  if peak_r > state.peak_max_r then state.peak_max_r = peak_r end
+  if true_peak_l > state.true_peak_max_l then state.true_peak_max_l = true_peak_l end
+  if true_peak_r > state.true_peak_max_r then state.true_peak_max_r = true_peak_r end
 
   -- Calculate normalized values for RMS, Peak, and Peak Hold based on active mode
   local rms_l_norm, rms_r_norm, peak_l_norm, peak_r_norm, hold_l_norm, hold_r_norm
@@ -470,6 +482,10 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
     state.peak_hold_timer_r = 0
     state.true_peak_hold_timer_l = 0
     state.true_peak_hold_timer_r = 0
+    state.peak_max_l = 0
+    state.peak_max_r = 0
+    state.true_peak_max_l = 0
+    state.true_peak_max_r = 0
     state.display_peak_l = 0
     state.display_peak_r = 0
     state.display_rms_l = 0
@@ -523,7 +539,7 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
     local col2_lbl, col2_val, col2_col
     local col3_lbl, col3_val, col3_col
     local function PeakHeadroomText()
-      local peak_db = UIUtils.Db(math.max(state.peak_hold_l or 0, state.peak_hold_r or 0))
+      local peak_db = UIUtils.Db(math.max(state.peak_max_l or 0, state.peak_max_r or 0))
       if peak_db <= -149 then return "-inf", 0x39FF88FF end
       local headroom = 0.0 - peak_db
       local color = headroom < 1.0 and 0xFF4F4EFF or (headroom < 3.0 and 0xE4BD13FF or 0x39FF88FF)
@@ -532,7 +548,7 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
     
     if mode == "dbfs" then
       col1_lbl = "Peak"
-      local peak_db = UIUtils.Db(math.max(state.peak_hold_l or 0, state.peak_hold_r or 0))
+      local peak_db = UIUtils.Db(math.max(state.peak_max_l or 0, state.peak_max_r or 0))
       col1_val = UIUtils.DbText(peak_db)
       col1_col = 0x4EFFB3FF
       
@@ -572,8 +588,8 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
     elseif mode == "k14" or mode == "k12" or mode == "k20" then
       local target = (mode == "k14" and -14.0 or (mode == "k12" and -12.0 or -20.0))
 
-      local peak_db = UIUtils.Db(math.max(analyzer.peak_l or 0, analyzer.peak_r or 0))
-      local rms_db = UIUtils.Db(math.max(analyzer.rms_l or 0, analyzer.rms_r or 0))
+      local peak_db = UIUtils.Db(math.max(state.peak_max_l or 0, state.peak_max_r or 0))
+      local rms_db = UIUtils.Db(math.max(state.display_rms_l or 0, state.display_rms_r or 0))
       local peak_dbr = peak_db - target
       local rms_dbr = rms_db - target
       local headroom = 0.0 - peak_db
