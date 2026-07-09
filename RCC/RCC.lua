@@ -1,10 +1,8 @@
 -- @description Room Control Center
 -- @author Uncle Os
--- @version 1.0.4
+-- @version 1.0.5
 -- @changelog
---   + True peak: 32-tap Blackman-Harris sinc (Cockos algorithm)
---   + Persistent absolute max peak (hipkval, no decay)
---   + Session peak max with click reset
+--   + Fix JSFX syntax error in Blackman-Harris sinc function
 -- @link https://github.com/uncleosmixing/ReaScripts
 -- @about
 --   # Room Control Center

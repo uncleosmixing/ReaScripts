@@ -178,22 +178,20 @@ function kweight_r(x) local(y1 y2) (
 );
 
 -- Blackman-Harris windowed sinc for true peak (matches Cockos Loudness Meter)
-function sinc_whr(x) local(wp sp) (
-  abs(x) < 0.000001 ? 1 : (
-    wp = 2.0 * $pi * (x + tp_half) / tp_taps;
-    sp = $pi * x;
-    (0.53836 - cos(wp) * 0.46164) * sin(sp) / sp;
-  );
-);
-
-function oversample_peak(hist frac) local(sum i centered tap_pos coef norm) (
+function oversample_peak(hist frac) local(sum i centered tap_pos wp sp coef norm) (
   sum = 0;
   norm = 0;
   i = 0;
   loop(tp_taps,
     centered = i - tp_half;
     tap_pos = centered - frac;
-    coef = sinc_whr(tap_pos);
+    abs(tap_pos) < 0.000001 ? (
+      coef = 1;
+    ) : (
+      wp = 2.0 * $pi * (tap_pos + tp_half) / tp_taps;
+      sp = $pi * tap_pos;
+      coef = (0.53836 - cos(wp) * 0.46164) * sin(sp) / sp;
+    );
     sum += hist[i] * coef;
     norm += coef;
     i += 1;
