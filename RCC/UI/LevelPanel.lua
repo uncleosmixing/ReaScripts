@@ -206,6 +206,9 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
   local peak_r = analyzer.peak_r or 0
   local rms_l = analyzer.rms_l or 0
   local rms_r = analyzer.rms_r or 0
+  -- Hipkval: absolute max from JSFX (Blackman-Harris sinc, no decay)
+  local hipk_l = analyzer.hipkval_l or 0
+  local hipk_r = analyzer.hipkval_r or 0
 
   -- Smooth Peak Ballistics (instant attack, timed decay independent of UI FPS)
   state.display_peak_l = state.display_peak_l or 0
@@ -243,9 +246,9 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
   UpdatePeakHold(state, "true_peak_hold_l", "true_peak_hold_timer_l", true_peak_l, dt, hold_time, 0.75)
   UpdatePeakHold(state, "true_peak_hold_r", "true_peak_hold_timer_r", true_peak_r, dt, hold_time, 0.75)
 
-  -- Update persistent session max
-  if peak_l > state.peak_max_l then state.peak_max_l = peak_l end
-  if peak_r > state.peak_max_r then state.peak_max_r = peak_r end
+  -- Update persistent session max from hipkval (JSFX Blackman-Harris true peak)
+  if hipk_l > state.peak_max_l then state.peak_max_l = hipk_l end
+  if hipk_r > state.peak_max_r then state.peak_max_r = hipk_r end
   if true_peak_l > state.true_peak_max_l then state.true_peak_max_l = true_peak_l end
   if true_peak_r > state.true_peak_max_r then state.true_peak_max_r = true_peak_r end
 

@@ -122,7 +122,11 @@ prev_r = 0;
 tp_l_hist = 17000;
 tp_r_hist = 17100;
 tp_taps = 32;
+tp_half = 16;
 gmem_write_counter = 0;
+peak_decay_rate = 0;
+hipkval_l = 0;
+hipkval_r = 0;
 
 function make_highpass(freq q) local(w0 cosw sinw alpha a0) (
   w0 = 2 * $pi * freq / srate;
@@ -173,24 +177,23 @@ function kweight_r(x) local(y1 y2) (
   y2;
 );
 
-function sinc(x) (
-  abs(x) < 0.000001 ? 1 : sin($pi * x) / ($pi * x);
+-- Blackman-Harris windowed sinc for true peak (matches Cockos Loudness Meter)
+function sinc_whr(x) local(wp sp) (
+  abs(x) < 0.000001 ? 1 : (
+    wp = 2.0 * $pi * (x + tp_half) / tp_taps;
+    sp = $pi * x;
+    (0.53836 - cos(wp) * 0.46164) * sin(sp) / sp;
+  );
 );
 
-function blackman(i n) local(a) (
-  a = i / max(1, n - 1);
-  0.42 - 0.5 * cos(2 * $pi * a) + 0.08 * cos(4 * $pi * a);
-);
-
-function oversample_peak(hist frac) local(sum i centered tap_pos coef norm w) (
+function oversample_peak(hist frac) local(sum i centered tap_pos coef norm) (
   sum = 0;
   norm = 0;
   i = 0;
   loop(tp_taps,
-    centered = i - (tp_taps - 1) * 0.5;
+    centered = i - tp_half;
     tap_pos = centered - frac;
-    w = blackman(i, tp_taps);
-    coef = sinc(tap_pos) * w;
+    coef = sinc_whr(tap_pos);
     sum += hist[i] * coef;
     norm += coef;
     i += 1;
@@ -219,8 +222,16 @@ abs_r = abs(spl1);
 k_l = kweight_l(spl0);
 k_r = kweight_r(spl1);
 
+-- Peak with decay (matches Cox: pk_decay = pow(0.5, 1/srate/0.150))
+peak_decay_rate == 0 ? peak_decay_rate = pow(0.5, 1 / max(1, srate) / 0.150);
 peak_l = max(abs_l, peak_l);
 peak_r = max(abs_r, peak_r);
+peak_l *= peak_decay_rate;
+peak_r *= peak_decay_rate;
+
+-- Persistent max (never decays, only reset by gmem write)
+abs_l > hipkval_l ? hipkval_l = abs_l;
+abs_r > hipkval_r ? hipkval_r = abs_r;
 
 tp_frame_l = abs_l;
 tp_frame_r = abs_r;
@@ -434,8 +445,11 @@ gmem_write_counter >= 256 ? (
   gmem[151] = waveform_write;
   gmem[152] = scope_points;
   gmem[153] = srate;
-  peak_l = 0;
-  peak_r = 0;
+  -- Hipkval: persistent absolute max (matches Cockos meter)
+  gmem[19] = hipkval_l;
+  gmem[20] = hipkval_r;
+  hipkval_l = 0;
+  hipkval_r = 0;
   true_peak_l = 0;
   true_peak_r = 0;
 

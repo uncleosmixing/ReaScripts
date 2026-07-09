@@ -38,6 +38,8 @@ function GmemRead.ReadAnalyzer()
   local correlation = active and reaper.gmem_read(7) or 0
   local true_peak_l = active and reaper.gmem_read(9) or 0
   local true_peak_r = active and reaper.gmem_read(10) or 0
+  local hipkval_l = active and reaper.gmem_read(19) or 0
+  local hipkval_r = active and reaper.gmem_read(20) or 0
   local lufs_m = active and reaper.gmem_read(11) or -150
   local lufs_s = active and reaper.gmem_read(12) or -150
   local lufs_i = active and reaper.gmem_read(13) or -150
@@ -129,6 +131,10 @@ function GmemRead.ReadAnalyzer()
   analyzer.true_peak_r = true_peak_r
   analyzer.true_peak_l_db = Db(true_peak_l)
   analyzer.true_peak_r_db = Db(true_peak_r)
+  analyzer.hipkval_l = hipkval_l
+  analyzer.hipkval_r = hipkval_r
+  analyzer.hipkval_l_db = Db(hipkval_l)
+  analyzer.hipkval_r_db = Db(hipkval_r)
   analyzer.lufs_m = lufs_m
   analyzer.lufs_s = lufs_s
   analyzer.lufs_i = lufs_i

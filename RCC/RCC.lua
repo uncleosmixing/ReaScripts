@@ -1,9 +1,10 @@
 -- @description Room Control Center
 -- @author Uncle Os
--- @version 1.0.3
+-- @version 1.0.4
 -- @changelog
---   + Upgrade true peak detection to 32-tap sinc (matches Cockos Loudness Meter accuracy)
---   + Persistent session peak max with click reset
+--   + True peak: 32-tap Blackman-Harris sinc (Cockos algorithm)
+--   + Persistent absolute max peak (hipkval, no decay)
+--   + Session peak max with click reset
 -- @link https://github.com/uncleosmixing/ReaScripts
 -- @about
 --   # Room Control Center
