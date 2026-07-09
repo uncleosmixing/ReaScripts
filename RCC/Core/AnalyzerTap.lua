@@ -2,13 +2,13 @@ local AnalyzerTap = {}
 
 local GMEM_NAME = "RCC_ANALYZER_TAP"
 local FX_DIR = "RCC"
-local FX_FILE = "RCC_AnalyzerTap_v17.jsfx"
+local FX_FILE = "RCC_AnalyzerTap_v16.jsfx"
 local FX_NAMES = {
-  "JS: RCC/RCC_AnalyzerTap_v17",
-  "JS: RCC Analyzer Tap v17",
-  "RCC_AnalyzerTap_v17",
-  "RCC Analyzer Tap v17",
   "JS: RCC/RCC_AnalyzerTap_v16",
+  "JS: RCC Analyzer Tap v16",
+  "RCC_AnalyzerTap_v16",
+  "RCC Analyzer Tap v16",
+  "JS: RCC/RCC_AnalyzerTap_v15",
   "JS: RCC Analyzer Tap v15",
   "RCC_AnalyzerTap_v15",
   "RCC Analyzer Tap v15",
@@ -58,12 +58,12 @@ local FX_NAMES = {
   "RCC Analyzer Tap v4",
 }
 local REC_FX_OFFSET = 0x1000000
-local JSFX = [[desc:RCC Analyzer Tap v17
+local JSFX = [[desc:RCC Analyzer Tap v16
 options:gmem=RCC_ANALYZER_TAP
 
 @init
 magic = 822031;
-version = 17;
+version = 16;
 fft_size = 2048;
 write_pos = 0;
 peak_l = 0;
@@ -121,12 +121,8 @@ prev_l = 0;
 prev_r = 0;
 tp_l_hist = 17000;
 tp_r_hist = 17100;
-tp_taps = 32;
-tp_half = 16;
+tp_taps = 16;
 gmem_write_counter = 0;
-peak_decay_rate = 0;
-hipkval_l = 0;
-hipkval_r = 0;
 
 function make_highpass(freq q) local(w0 cosw sinw alpha a0) (
   w0 = 2 * $pi * freq / srate;
@@ -177,21 +173,24 @@ function kweight_r(x) local(y1 y2) (
   y2;
 );
 
--- Blackman-Harris windowed sinc for true peak (matches Cockos Loudness Meter)
-function oversample_peak(hist frac) local(sum i centered tap_pos wp sp coef norm) (
+function sinc(x) (
+  abs(x) < 0.000001 ? 1 : sin($pi * x) / ($pi * x);
+);
+
+function blackman(i n) local(a) (
+  a = i / max(1, n - 1);
+  0.42 - 0.5 * cos(2 * $pi * a) + 0.08 * cos(4 * $pi * a);
+);
+
+function oversample_peak(hist frac) local(sum i centered tap_pos coef norm w) (
   sum = 0;
   norm = 0;
   i = 0;
   loop(tp_taps,
-    centered = i - tp_half;
+    centered = i - (tp_taps - 1) * 0.5;
     tap_pos = centered - frac;
-    abs(tap_pos) < 0.000001 ? (
-      coef = 1;
-    ) : (
-      wp = 2.0 * $pi * (tap_pos + tp_half) / tp_taps;
-      sp = $pi * tap_pos;
-      coef = (0.53836 - cos(wp) * 0.46164) * sin(sp) / sp;
-    );
+    w = blackman(i, tp_taps);
+    coef = sinc(tap_pos) * w;
     sum += hist[i] * coef;
     norm += coef;
     i += 1;
@@ -220,16 +219,8 @@ abs_r = abs(spl1);
 k_l = kweight_l(spl0);
 k_r = kweight_r(spl1);
 
--- Peak with decay (matches Cox: pk_decay = pow(0.5, 1/srate/0.150))
-peak_decay_rate == 0 ? peak_decay_rate = pow(0.5, 1 / max(1, srate) / 0.150);
 peak_l = max(abs_l, peak_l);
 peak_r = max(abs_r, peak_r);
-peak_l *= peak_decay_rate;
-peak_r *= peak_decay_rate;
-
--- Persistent max (never decays, only reset by gmem write)
-abs_l > hipkval_l ? hipkval_l = abs_l;
-abs_r > hipkval_r ? hipkval_r = abs_r;
 
 tp_frame_l = abs_l;
 tp_frame_r = abs_r;
@@ -443,11 +434,8 @@ gmem_write_counter >= 256 ? (
   gmem[151] = waveform_write;
   gmem[152] = scope_points;
   gmem[153] = srate;
-  -- Hipkval: persistent absolute max (matches Cockos meter)
-  gmem[19] = hipkval_l;
-  gmem[20] = hipkval_r;
-  hipkval_l = 0;
-  hipkval_r = 0;
+  peak_l = 0;
+  peak_r = 0;
   true_peak_l = 0;
   true_peak_r = 0;
 

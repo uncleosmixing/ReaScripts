@@ -320,6 +320,21 @@ function MonitorManager.ReadAnalyzer()
   return analyzer
 end
 
+  local analyzer = GmemRead.ReadAnalyzer()
+  local master = GetMaster()
+
+  if not analyzer.active then
+    analyzer.peak_l = reaper.Track_GetPeakInfo(master, 0)
+    analyzer.peak_r = reaper.Track_GetPeakInfo(master, 1)
+    analyzer.true_peak_l = math.max(analyzer.true_peak_l or 0, analyzer.peak_l or 0)
+    analyzer.true_peak_r = math.max(analyzer.true_peak_r or 0, analyzer.peak_r or 0)
+  end
+
+  analyzer.peak = math.max(analyzer.peak_l or 0, analyzer.peak_r or 0)
+  analyzer.rms = math.max(analyzer.rms_l or 0, analyzer.rms_r or 0)
+  return analyzer
+end
+
 function MonitorManager.UpdateAnalyzerMax(state, analyzer)
   if not analyzer.active then
     return

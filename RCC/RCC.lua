@@ -1,8 +1,10 @@
 -- @description Room Control Center
 -- @author Uncle Os
--- @version 1.0.5
+-- @version 1.0.6
 -- @changelog
---   + Fix JSFX syntax error in Blackman-Harris sinc function
+--   + Peak decay: Cox formula pow(0.5, dt/0.150), 150ms half-life
+--   + Persistent session peak max with click reset
+--   + Revert JSFX to original (stable)
 -- @link https://github.com/uncleosmixing/ReaScripts
 -- @about
 --   # Room Control Center
