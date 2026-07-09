@@ -231,6 +231,8 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
   state.true_peak_hold_timer_r = state.true_peak_hold_timer_r or 0
 
   -- Freeze indicators: hipkval from JSFX (absolute max, never decays)
+  state.peak_max_l = state.peak_max_l or 0
+  state.peak_max_r = state.peak_max_r or 0
   local hipk_l = analyzer.hipkval_l or 0
   local hipk_r = analyzer.hipkval_r or 0
   state.peak_max_l = math.max(state.peak_max_l, hipk_l)
