@@ -374,8 +374,8 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
       color_l = cfg.label_color(state.display_lufs_m, state.clip_l)
       color_r = cfg.label_color(state.display_lufs_m, state.clip_r)
     else
-      local db_l = UIUtils.Db(state.peak_hold_l)
-      local db_r = UIUtils.Db(state.peak_hold_r)
+      local db_l = UIUtils.Db(state.peak_max_l)
+      local db_r = UIUtils.Db(state.peak_max_r)
       db_l_text = cfg.format_db(db_l)
       db_r_text = cfg.format_db(db_r)
       color_l = cfg.label_color(db_l, state.clip_l)
