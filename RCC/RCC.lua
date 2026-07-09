@@ -1,10 +1,9 @@
 -- @description Room Control Center
 -- @author Uncle Os
--- @version 1.0.2
+-- @version 1.0.3
 -- @changelog
---   + Fix level meter: compensate master fader position
+--   + Upgrade true peak detection to 32-tap sinc (matches Cockos Loudness Meter accuracy)
 --   + Persistent session peak max with click reset
---   + Remove ReaTitles from ReaPack (temporary)
 -- @link https://github.com/uncleosmixing/ReaScripts
 -- @about
 --   # Room Control Center

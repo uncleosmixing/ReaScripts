@@ -2,13 +2,13 @@ local AnalyzerTap = {}
 
 local GMEM_NAME = "RCC_ANALYZER_TAP"
 local FX_DIR = "RCC"
-local FX_FILE = "RCC_AnalyzerTap_v16.jsfx"
+local FX_FILE = "RCC_AnalyzerTap_v17.jsfx"
 local FX_NAMES = {
+  "JS: RCC/RCC_AnalyzerTap_v17",
+  "JS: RCC Analyzer Tap v17",
+  "RCC_AnalyzerTap_v17",
+  "RCC Analyzer Tap v17",
   "JS: RCC/RCC_AnalyzerTap_v16",
-  "JS: RCC Analyzer Tap v16",
-  "RCC_AnalyzerTap_v16",
-  "RCC Analyzer Tap v16",
-  "JS: RCC/RCC_AnalyzerTap_v15",
   "JS: RCC Analyzer Tap v15",
   "RCC_AnalyzerTap_v15",
   "RCC Analyzer Tap v15",
@@ -58,12 +58,12 @@ local FX_NAMES = {
   "RCC Analyzer Tap v4",
 }
 local REC_FX_OFFSET = 0x1000000
-local JSFX = [[desc:RCC Analyzer Tap v16
+local JSFX = [[desc:RCC Analyzer Tap v17
 options:gmem=RCC_ANALYZER_TAP
 
 @init
 magic = 822031;
-version = 16;
+version = 17;
 fft_size = 2048;
 write_pos = 0;
 peak_l = 0;
@@ -121,7 +121,7 @@ prev_l = 0;
 prev_r = 0;
 tp_l_hist = 17000;
 tp_r_hist = 17100;
-tp_taps = 16;
+tp_taps = 32;
 gmem_write_counter = 0;
 
 function make_highpass(freq q) local(w0 cosw sinw alpha a0) (
