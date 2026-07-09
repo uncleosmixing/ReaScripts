@@ -210,7 +210,7 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
   -- Peak ballistics: Cox formula pk_decay = pow(0.5, dt / PEAK_METER_DECAY)
   -- PEAK_METER_DECAY = 0.150 (150ms half-life)
   local PEAK_METER_DECAY = 0.150
-  local pk_decay = math.pow(0.5, dt / PEAK_METER_DECAY)
+  local pk_decay = 0.5 ^ (dt / PEAK_METER_DECAY)
   state.display_peak_l = state.display_peak_l or 0
   state.display_peak_r = state.display_peak_r or 0
   state.display_peak_l = math.max(peak_l, state.display_peak_l * pk_decay)
