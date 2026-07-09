@@ -11,7 +11,7 @@ Dockable monitoring, metering, reference playback and headphone correction contr
 Requires ReaImGui.
         ]]></description>
       </metadata>
-      <version name="1.0.1" author="Uncle Os">
+      <version name="1.0.2" author="Uncle Os">
         <source main="main">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/RCC.lua</source>
         <source file="Core/AnalyzerTap.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Core/AnalyzerTap.lua</source>
         <source file="Core/GmemBridge.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Core/GmemBridge.lua</source>

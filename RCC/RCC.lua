@@ -1,8 +1,10 @@
 -- @description Room Control Center
 -- @author Uncle Os
--- @version 1.0.1
+-- @version 1.0.2
 -- @changelog
---   + Initial ReaPack release
+--   + Fix level meter: compensate master fader position
+--   + Persistent session peak max with click reset
+--   + Remove ReaTitles from ReaPack (temporary)
 -- @link https://github.com/uncleosmixing/ReaScripts
 -- @about
 --   # Room Control Center
