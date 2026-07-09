@@ -230,12 +230,11 @@ function LevelPanel.Draw(ctx, state, analyzer, manager, small_font, small_font_s
   state.true_peak_hold_timer_l = state.true_peak_hold_timer_l or 0
   state.true_peak_hold_timer_r = state.true_peak_hold_timer_r or 0
 
-  -- Persistent session max (freeze: only goes up, reset on click)
-  state.peak_max_l = state.peak_max_l or 0
-  state.peak_max_r = state.peak_max_r or 0
-
-  state.peak_max_l = math.max(state.peak_max_l, peak_l)
-  state.peak_max_r = math.max(state.peak_max_r, peak_r)
+  -- Freeze indicators: hipkval from JSFX (absolute max, never decays)
+  local hipk_l = analyzer.hipkval_l or 0
+  local hipk_r = analyzer.hipkval_r or 0
+  state.peak_max_l = math.max(state.peak_max_l, hipk_l)
+  state.peak_max_r = math.max(state.peak_max_r, hipk_r)
 
   UpdatePeakHold(state, "true_peak_hold_l", "true_peak_hold_timer_l", math.max(analyzer.true_peak_l or 0, peak_l), dt, 1.5, 0.75)
   UpdatePeakHold(state, "true_peak_hold_r", "true_peak_hold_timer_r", math.max(analyzer.true_peak_r or 0, peak_r), dt, 1.5, 0.75)
