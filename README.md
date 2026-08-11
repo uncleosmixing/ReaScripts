@@ -30,4 +30,10 @@ Dockable monitoring, metering, reference playback and headphone correction contr
 
 ## Bundled Third-Party
 
-Roof|control by Ilya-audio (MIT License) - headphone monitoring with speaker emulation and crossfeed.
+Roof|control by Ilya-audio / Ilya Kuznetsov (MIT License) - headphone monitoring with speaker emulation and crossfeed.
+
+- GitHub: https://github.com/Ilya-audio/roof_control
+- Releases: https://github.com/Ilya-audio/roof_control/releases
+- Video demo: https://www.youtube.com/watch?v=u_sbqv-6IHA
+- Support / Boosty: https://boosty.to/rooftopstudio
+- AutoEq profiles: https://autoeq.app

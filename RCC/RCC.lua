@@ -1,8 +1,8 @@
 -- @description Room Control Center
 -- @author Uncle Os
--- @version 1.0.2
+-- @version 1.0.3
 -- @changelog
---   + Add Russian and English PDF manuals to the ReaPack package
+--   + Update manuals with explicit Roof|control author credits and links
 -- @link https://github.com/uncleosmixing/ReaScripts
 -- @about
 --   # Room Control Center
