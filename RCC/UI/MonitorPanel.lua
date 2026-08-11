@@ -5,7 +5,6 @@ local ReferencePanel = require("ReferencePanel")
 local WaveformPanel = require("WaveformPanel")
 local SpectrumPanel = require("SpectrumPanel")
 local SpatialPanel = require("SpatialPanel")
-local SampleBrowserPanel = require("SampleBrowserPanel")
 local MonitorControlPanel = require("MonitorControlPanel")
 local HeadphoneCalPanel = require("HeadphoneCalPanel")
 
@@ -18,7 +17,6 @@ local PANEL_ORDER = {
   "spectrum",
   "spatial_analyzer",
   "reference",
-  "sample_browser",
   "hp_correction",
 }
 
@@ -56,13 +54,6 @@ local PANEL_BY_ID = {
     right_reserve = 90,
     draw = function(ctx, state, active_analyzer, manager, small_font, small_font_size)
       ReferencePanel.Draw(ctx, state, active_analyzer, manager, small_font, small_font_size)
-    end,
-  },
-  sample_browser = {
-    label = "SAMPLE BROWSER",
-    right_reserve = 82,
-    draw = function(ctx, state, active_analyzer, manager, small_font, small_font_size)
-      SampleBrowserPanel.Draw(ctx, state, active_analyzer, manager, small_font, small_font_size)
     end,
   },
   hp_correction = {

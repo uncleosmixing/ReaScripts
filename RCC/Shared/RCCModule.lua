@@ -64,7 +64,6 @@ local RCC_MODULE_NAMES = {
   "GmemBridge", "GmemRead", "AnalyzerTap", "PostCalMeter",
   "ReferencePlayer", "ReferenceWaveform", "ReferencePanel",
   "LevelPanel", "LevelBar", "WaveformPanel", "SpectrumPanel", "SpatialPanel",
-  "SampleBrowserPanel",
   "MonitorControlPanel", "HeadphoneCalPanel", "HeadphoneCalibrationManager",
   "MeteringSpec", "MeteringConfig",
   "RoofControlInstaller", "RoofControlManager", "UIUtils", "UIKit",
