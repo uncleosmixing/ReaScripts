@@ -9,9 +9,11 @@
 Dockable monitoring, metering, reference playback and headphone correction control center for REAPER.
 
 Requires ReaImGui.
+
+Includes Russian and English PDF user manuals.
         ]]></description>
       </metadata>
-      <version name="1.0.1" author="Uncle Os">
+      <version name="1.0.2" author="Uncle Os">
         <source main="main">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/RCC.lua</source>
         <source file="Core/AnalyzerTap.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Core/AnalyzerTap.lua</source>
         <source file="Core/GmemBridge.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Core/GmemBridge.lua</source>
@@ -28,6 +30,8 @@ Requires ReaImGui.
         <source file="Core/ReferenceWaveform.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Core/ReferenceWaveform.lua</source>
         <source file="Core/RoofControlInstaller.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Core/RoofControlInstaller.lua</source>
         <source file="Core/RoofControlManager.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Core/RoofControlManager.lua</source>
+        <source file="Docs/Room_Control_Center_Manual_EN.pdf">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Docs/Room_Control_Center_Manual_EN.pdf</source>
+        <source file="Docs/Room_Control_Center_Manual_RU.pdf">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Docs/Room_Control_Center_Manual_RU.pdf</source>
         <source file="Shared/RCC_LOOK_AND_FEEL.md">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Shared/RCC_LOOK_AND_FEEL.md</source>
         <source file="Shared/RCCConfig.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Shared/RCCConfig.lua</source>
         <source file="Shared/RCCModule.lua">https://raw.githubusercontent.com/uncleosmixing/ReaScripts/main/RCC/Shared/RCCModule.lua</source>
