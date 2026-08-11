@@ -1,6 +1,6 @@
 # Room Control Center
 
-Dockable monitoring, metering, reference playback and headphone correction control center for REAPER.
+Dockable monitoring, metering, reference playback, sample browsing and headphone correction control center for REAPER.
 
 ## Installation
 
@@ -20,6 +20,7 @@ Dockable monitoring, metering, reference playback and headphone correction contr
 - Spatial Panel
 - Headphone Calibration
 - Reference Player
+- Sample Browser
 - Dockable Interface
 
 ## Dependencies

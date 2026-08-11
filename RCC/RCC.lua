@@ -1,8 +1,8 @@
 -- @description Room Control Center
 -- @author Uncle Os
--- @version 1.0.3
+-- @version 1.0.4
 -- @changelog
---   + Update manuals with explicit Roof|control author credits and links
+--   + Add dockable Sample Browser panel
 -- @link https://github.com/uncleosmixing/ReaScripts
 -- @about
 --   # Room Control Center
