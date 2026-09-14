@@ -1,14 +1,16 @@
--- @description Room Control Center
--- @author Uncle Os
+-- @description Room Control Center (RCC)
+-- @author Uncle Os (uncleosmixing)
 -- @version 1.0.3
 -- @changelog
---   + Update manuals with explicit Roof|control author credits and links
+--   + Enhanced ReaPack metadata tags for better searchability (RCC, Room Control Center, uncleosmixing)
 -- @link https://github.com/uncleosmixing/ReaScripts
 -- @about
---   # Room Control Center
+--   # Room Control Center (RCC)
 --
 --   Dockable monitoring, metering, reference playback and headphone correction
 --   control center for REAPER.
+--
+--   Keywords: RCC, Room Control Center, uncleosmixing, Uncle Os, Monitoring, Metering.
 --
 --   Requires ReaImGui.
 
